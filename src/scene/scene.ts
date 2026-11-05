@@ -17,7 +17,7 @@ import { site } from '../content/site.ts';
 import { createTextureStore } from '../textures/store.ts';
 import { fitCamera } from './camera.ts';
 
-const PAGE_W = 3;
+export const PAGE_W = 3;
 const PAGE_H = 4;
 const FOV = 35;
 const TABLE_URL = '/scene/table.webp';

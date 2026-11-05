@@ -53,11 +53,17 @@ export async function boot(): Promise<void> {
   };
 
   try {
-    const { createApp } = await import('./scene/scene.ts');
+    const { createApp, PAGE_W } = await import('./scene/scene.ts');
     if (failed) return;
+    const { cameraFor, createPhoneCommands, createPhoneNavigator, isPhone, phoneDragWidthPx } = await import(
+      './controls/phone.ts'
+    );
+    if (failed) return;
+    let syncCamera = () => {};
     const created = createApp(canvas, fail, {
       onSpread: () => {
         ui.update();
+        syncCamera();
       },
     });
     app = created;
@@ -69,9 +75,48 @@ export async function boot(): Promise<void> {
     detachLamp = attachLamp(window, (nx, ny) => created.setLamp(nx, ny), matchMedia('(hover: hover)').matches);
     const { attachControls } = await import('./controls/controls.ts');
     if (failed) return;
-    detachControls = attachControls(canvas, created.model, {
-      spreadWidthPx: () => created.spreadWidthPx(),
-    });
+
+    const model = created.model;
+    const nav = createPhoneNavigator(model);
+    const phoneCommands = createPhoneCommands(model, nav);
+    syncCamera = () => {
+      const c = cameraFor(window.innerWidth, model.spread, nav.focus(), PAGE_W);
+      created.setCameraTarget(c.x, c.target);
+    };
+    syncCamera();
+    window.addEventListener('resize', syncCamera);
+    window.addEventListener('orientationchange', syncCamera);
+    const after =
+      <A extends unknown[]>(f: (...a: A) => void) =>
+      (...a: A) => {
+        f(...a);
+        syncCamera();
+      };
+    // На десктопе команды идут прямо в модель, на телефоне — через постраничный навигатор.
+    const pick = () => (isPhone(window.innerWidth) ? phoneCommands : model);
+    const detachCamera = () => {
+      window.removeEventListener('resize', syncCamera);
+      window.removeEventListener('orientationchange', syncCamera);
+    };
+    const detachInput = attachControls(
+      canvas,
+      {
+        next: after(() => pick().next()),
+        prev: after(() => pick().prev()),
+        beginDrag: (d) => {
+          const ok = pick().beginDrag(d);
+          syncCamera();
+          return ok;
+        },
+        moveDrag: (f) => pick().moveDrag(f),
+        endDrag: after((v: number) => pick().endDrag(v)),
+      },
+      { spreadWidthPx: () => phoneDragWidthPx(window.innerWidth, created.spreadWidthPx(), canvas.clientWidth) },
+    );
+    detachControls = () => {
+      detachInput();
+      detachCamera();
+    };
     await created.ready;
     if (!failed) loading.remove();
   } catch {

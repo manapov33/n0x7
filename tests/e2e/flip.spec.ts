@@ -9,14 +9,18 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('ArrowRight проходит развороты 0 → 4, ArrowLeft возвращает к 0', async ({ page }) => {
-  for (let i = 1; i <= 4; i++) {
-    await page.keyboard.press('ArrowRight');
-    await expect(spread(page)).toHaveAttribute('data-spread', String(i));
-  }
-  for (let i = 3; i >= 0; i--) {
-    await page.keyboard.press('ArrowLeft');
-    await expect(spread(page)).toHaveAttribute('data-spread', String(i));
-  }
+  // На телефоне стрелка листает по странице: на разворот уходит до двух нажатий.
+  const phone = test.info().project.name === 'phone';
+  const stepTo = async (key: string, want: number) => {
+    for (let n = 0; n < (phone ? 2 : 1); n++) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(phone ? 150 : 0);
+      if ((await spread(page).getAttribute('data-spread')) === String(want)) break;
+    }
+    await expect(spread(page)).toHaveAttribute('data-spread', String(want));
+  };
+  for (let i = 1; i <= 4; i++) await stepTo('ArrowRight', i);
+  for (let i = 3; i >= 0; i--) await stepTo('ArrowLeft', i);
 });
 
 test('10 быстрых ArrowRight подряд дают data-spread="4"', async ({ page }) => {
