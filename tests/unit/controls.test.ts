@@ -97,6 +97,20 @@ describe('указатель', () => {
     expect(c.beginDrag).not.toHaveBeenCalled();
   });
 
+  it('если есть команда tap, клик отдаётся ей со стороной, а next/prev не вызываются', () => {
+    detach();
+    const tap = vi.fn();
+    c = { ...mk(), tap } as ReturnType<typeof mk>;
+    detach = attachControls(el, c as never, { now });
+    ptr('pointerdown', 200, 400);
+    ptr('pointerup', 200, 400);
+    ptr('pointerdown', 800, 400);
+    ptr('pointerup', 800, 400);
+    expect(tap.mock.calls).toEqual([['left'], ['right']]);
+    expect(c.next).not.toHaveBeenCalled();
+    expect(c.prev).not.toHaveBeenCalled();
+  });
+
   it('движение на 7 px — ещё клик, не жест', () => {
     ptr('pointerdown', 800, 400);
     ptr('pointermove', 793, 400);

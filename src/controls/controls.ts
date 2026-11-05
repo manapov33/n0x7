@@ -4,6 +4,8 @@ export type Commands = {
   beginDrag(d: 1 | -1): boolean;
   moveDrag(f: number): void;
   endDrag(v: number): void;
+  /** Необязательно: касание без движения. Без неё правая половина — next, левая — prev. */
+  tap?(side: 'left' | 'right'): void;
 };
 
 const DRAG_THRESHOLD = 8; // px: меньше — это клик
@@ -157,7 +159,9 @@ export function attachControls(
       const x = e.clientX - rect.left;
       g = null;
       if (rect.width > 0 && Number.isFinite(x)) {
-        if (x >= rect.width / 2) c.next();
+        const side = x >= rect.width / 2 ? 'right' : 'left';
+        if (c.tap) c.tap(side);
+        else if (side === 'right') c.next();
         else c.prev();
       }
       return;

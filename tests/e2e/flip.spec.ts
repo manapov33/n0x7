@@ -67,3 +67,18 @@ test('короткое перетаскивание на 10% разворота 
   await page.waitForTimeout(900);
   await expect(spread(page)).toHaveAttribute('data-spread', '0');
 });
+
+test('клик по левой половине закрытой обложки открывает журнал', async ({ page }) => {
+  await page.waitForTimeout(500);
+  await page.mouse.click(60, 400); // левая половина экрана, обложка стоит по центру
+  await expect(spread(page)).toHaveAttribute('data-spread', '1');
+});
+
+test('клик по левой половине на развороте 1 по-прежнему листает назад', async ({ page }) => {
+  test.skip(test.info().project.name === 'phone', 'на телефоне левый край ведёт по страницам');
+  await page.keyboard.press('ArrowRight');
+  await expect(spread(page)).toHaveAttribute('data-spread', '1');
+  await page.waitForTimeout(900);
+  await page.mouse.click(60, 400);
+  await expect(spread(page)).toHaveAttribute('data-spread', '0');
+});

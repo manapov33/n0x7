@@ -104,6 +104,11 @@ export async function boot(): Promise<void> {
       {
         next: after(() => pick().next()),
         prev: after(() => pick().prev()),
+        // Закрытая обложка стоит по центру: левая её половина тоже открывает журнал.
+        tap: after((side: 'left' | 'right') => {
+          if (model.spread === 0 || side === 'right') pick().next();
+          else pick().prev();
+        }),
         beginDrag: (d) => {
           const ok = pick().beginDrag(d);
           syncCamera();
