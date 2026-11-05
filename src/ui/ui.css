@@ -1,0 +1,182 @@
+#ui-root {
+  display: none;
+}
+
+html[data-mode='book'] #ui-root {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 20; /* выше #loading: кнопка работает во время загрузки */
+  pointer-events: none;
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: var(--fg);
+}
+
+#ui-root > * {
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* Затемнение сверху и снизу: подписи читаются на любом освещённом столе. */
+#ui-root::before,
+#ui-root::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 130px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#ui-root::before {
+  top: 0;
+  background: linear-gradient(rgba(11, 10, 9, 0.78), transparent);
+}
+
+#ui-root::after {
+  bottom: 0;
+  background: linear-gradient(transparent, rgba(11, 10, 9, 0.82));
+}
+
+#ui-root :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.ui-brand {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  text-shadow: 0 1px 8px var(--bg), 0 0 2px var(--bg);
+}
+
+.ui-logo {
+  font: 500 18px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.24em;
+}
+
+.ui-tagline {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(236, 230, 218, 0.82);
+}
+
+.ui-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%);
+  padding: 0 4px;
+  font: 12px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(236, 230, 218, 0.82);
+  text-shadow: 0 1px 8px var(--bg), 0 0 2px var(--bg);
+  pointer-events: none;
+}
+
+.ui-hint[hidden] {
+  display: none;
+}
+
+#counter {
+  position: absolute;
+  left: 20px;
+  bottom: 28px;
+  font: 12px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.16em;
+  color: rgba(236, 230, 218, 0.82);
+  text-shadow: 0 1px 8px var(--bg), 0 0 2px var(--bg);
+  pointer-events: none;
+}
+
+.ui-cta {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 1px solid var(--accent);
+  border-radius: 24px;
+  background: rgba(11, 10, 9, 0.72);
+  backdrop-filter: blur(6px);
+  color: var(--accent);
+  font: 500 14px/1 'Manrope', system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.ui-cta:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+#contact-panel {
+  position: absolute;
+  right: 20px;
+  bottom: 76px;
+  width: min(340px, calc(100% - 40px));
+  box-sizing: border-box;
+  padding: 24px 20px 20px;
+  border: 1px solid rgba(236, 230, 218, 0.18);
+  border-radius: 14px;
+  background: rgba(11, 10, 9, 0.94);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#contact-panel[hidden] {
+  display: none;
+}
+
+#contact-panel h2 {
+  margin: 0 0 6px;
+  font: 500 28px/1.1 'Cormorant', serif;
+  padding-right: 48px;
+}
+
+.ui-link {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid rgba(236, 230, 218, 0.28);
+  border-radius: 10px;
+  color: var(--fg);
+  font-size: 15px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.ui-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.ui-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: 28px/1 'Manrope', system-ui, sans-serif;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .ui-brand { left: 16px; top: 16px; }
+  #counter { left: 16px; }
+  .ui-cta { right: 16px; }
+  #contact-panel { right: 12px; left: 12px; width: auto; }
+}

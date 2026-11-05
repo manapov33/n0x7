@@ -7,28 +7,12 @@
   background: var(--bg);
 }
 
-#counter,
 #loading {
   display: none;
 }
 
 html[data-mode='book'] body {
   overflow: hidden;
-}
-
-html[data-mode='book'] #counter {
-  display: block;
-  position: fixed;
-  left: 20px;
-  bottom: 16px;
-  font: 12px/1 'JetBrains Mono', monospace;
-  letter-spacing: 0.16em;
-  color: var(--muted);
-  pointer-events: none;
-}
-
-html[data-mode='book'] #counter::before {
-  content: attr(data-spread);
 }
 
 html[data-mode='book'] #loading {
