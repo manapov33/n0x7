@@ -1,12 +1,10 @@
 import type { BookModel } from '../book/model.ts';
 import type { Commands } from './controls.ts';
+import { isPhone } from './viewport.ts';
 
-export const PHONE_MAX_WIDTH = 768;
+export { PHONE_MAX_WIDTH, isPhone } from './viewport.ts';
 
 export type Focus = 'cover' | 'left' | 'right';
-
-/** Телефон — ширина экрана меньше 768 px. */
-export const isPhone = (viewportWidth: number): boolean => viewportWidth < PHONE_MAX_WIDTH;
 
 /**
  * Постраничная навигация телефона. Состояние выводится из модели:

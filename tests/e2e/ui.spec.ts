@@ -10,7 +10,9 @@ test('обложка: подпись, кнопка, подсказка, счёт
   await expect(page.locator('#counter')).toHaveText('1 / 5');
   await expect(page.locator('#loading')).toHaveCount(0);
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByText('листайте')).toBeHidden();
+  // На телефоне подсказка остаётся на каждой странице, на десктопе уходит после обложки.
+  if (test.info().project.name === 'phone') await expect(page.getByText('листайте')).toBeVisible();
+  else await expect(page.getByText('листайте')).toBeHidden();
   await expect(page.locator('#counter')).toHaveText('2 / 5');
   await expect(page.locator('#counter')).toHaveAttribute('data-spread', '1');
 });
@@ -185,4 +187,38 @@ test('закрытая посетителем панель не возвраща
   }
   await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
   await expect(panel).toBeVisible();
+});
+
+test('телефон: «листайте» видна на каждой странице и не налезает на кнопку и счётчик', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'подсказка на каждой странице — только телефон');
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  const hint = page.getByText('листайте');
+  const overlap = async () => {
+    const h = (await hint.boundingBox())!;
+    for (const other of [button(page), page.locator('#counter')]) {
+      const o = (await other.boundingBox())!;
+      const apart = h.x + h.width <= o.x || o.x + o.width <= h.x || h.y + h.height <= o.y || o.y + o.height <= h.y;
+      expect(apart).toBe(true);
+    }
+  };
+  for (let i = 0; i < 6; i++) {
+    await expect(hint).toBeVisible();
+    await overlap();
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(150);
+  }
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '3');
+});
+
+test('десктоп: при ресайзе до ширины телефона подсказка появляется на развороте', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'ресайз окна — только десктоп');
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByText('листайте')).toBeHidden();
+  await page.setViewportSize({ width: 600, height: 900 });
+  await expect(page.getByText('листайте')).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.getByText('листайте')).toBeHidden();
 });

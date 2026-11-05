@@ -1,4 +1,5 @@
 import type { BookModel } from '../book/model.ts';
+import { isPhone } from '../controls/viewport.ts';
 import type { Site } from '../content/types.ts';
 
 export type Ui = {
@@ -72,7 +73,8 @@ export function createUi(root: HTMLElement, site: Site): Ui {
     seen = s;
     counter.dataset.spread = String(s);
     counter.textContent = `${s + 1} / ${total}`;
-    hint.hidden = s !== 0;
+    // На телефоне подсказка живёт на каждой странице (там листают по странице), на десктопе — только на обложке.
+    hint.hidden = s !== 0 && !isPhone(window.innerWidth);
   };
 
   const open = () => {
@@ -97,6 +99,7 @@ export function createUi(root: HTMLElement, site: Site): Ui {
     if (e.key === 'Escape') closePanel();
   };
   document.addEventListener('keydown', onKey);
+  window.addEventListener('resize', update);
 
   update();
   return {
@@ -107,6 +110,7 @@ export function createUi(root: HTMLElement, site: Site): Ui {
     update,
     destroy() {
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', update);
       ui.remove();
     },
   };
