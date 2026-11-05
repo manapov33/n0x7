@@ -1,0 +1,64 @@
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  background: var(--bg);
+}
+
+#counter,
+#loading {
+  display: none;
+}
+
+html[data-mode='book'] body {
+  overflow: hidden;
+}
+
+html[data-mode='book'] #counter {
+  display: block;
+  position: fixed;
+  left: 20px;
+  bottom: 16px;
+  font: 12px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+html[data-mode='book'] #counter::before {
+  content: attr(data-spread);
+}
+
+html[data-mode='book'] #loading {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: var(--bg);
+}
+
+.loading-logo {
+  font-family: 'Cormorant', serif;
+  font-size: 56px;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+}
+
+.loading-bar {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: loading-sweep 1.4s linear infinite;
+}
+
+@keyframes loading-sweep {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}

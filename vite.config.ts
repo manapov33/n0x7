@@ -11,4 +11,5 @@ function fallbackPlugin(): Plugin {
   };
 }
 
-export default defineConfig({ plugins: [fallbackPlugin()] });
+// three.js лежит в отдельном ленивом чанке (~540 кБ): запасной странице он не нужен
+export default defineConfig({ plugins: [fallbackPlugin()], build: { chunkSizeWarningLimit: 600 } });

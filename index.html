@@ -5,10 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>N0X7 — сайты и приложения на заказ</title>
     <meta name="description" content="N0X7 — студия: сайты и приложения на заказ." />
+    <script>
+      // До первой отрисовки: при включённом JS и без reduced motion сразу прячем запасную страницу.
+      // boot() вернёт её, если книгу показать не удалось.
+      try {
+        if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.dataset.mode = 'book';
+        }
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="/src/fallback/fonts.css" />
     <link rel="stylesheet" href="/src/fallback/fallback.css" />
+    <link rel="stylesheet" href="/src/scene/scene.css" />
   </head>
   <body>
     <main id="fallback"><!--FALLBACK--></main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
