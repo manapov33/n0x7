@@ -57,20 +57,31 @@ export function createUi(root: HTMLElement, site: Site): Ui {
   const panel = ui.querySelector<HTMLElement>('#contact-panel')!;
   const close = ui.querySelector<HTMLButtonElement>('.ui-close')!;
 
+  // Последний разворот сам открывает панель один раз; закрытая посетителем, она молчит до ухода с него.
+  let seen = 0;
+  let dismissed = false;
+  const show = () => {
+    panel.hidden = false;
+    cta.setAttribute('aria-expanded', 'true');
+  };
+
   const update = () => {
     const s = model?.spread ?? 0;
+    if (s !== last) dismissed = false;
+    if (s === last && seen !== last && !dismissed) show();
+    seen = s;
     counter.dataset.spread = String(s);
     counter.textContent = `${s + 1} / ${total}`;
     hint.hidden = s !== 0;
   };
 
   const open = () => {
-    panel.hidden = false;
-    cta.setAttribute('aria-expanded', 'true');
+    show();
     panel.focus({ preventScroll: true });
   };
   const closePanel = () => {
     if (panel.hidden) return;
+    if (model?.spread === last) dismissed = true;
     const hadFocus = panel.contains(document.activeElement) || document.activeElement === document.body;
     panel.hidden = true;
     cta.setAttribute('aria-expanded', 'false');

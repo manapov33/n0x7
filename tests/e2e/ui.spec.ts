@@ -144,3 +144,45 @@ test('оверлей не перехватывает указатель вне �
   await button(page).click();
   expect(await hit({ sel: '#contact-panel', fx: 0.5, fy: 0.9 })).toBe('panel');
 });
+
+test('дойти листанием до последнего разворота: панель открывается сама, фокус не уходит', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  const panel = page.locator('#contact-panel');
+  await expect(panel).toBeHidden();
+  const before = await page.evaluate(() => document.activeElement?.tagName);
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
+  await expect(panel).toBeVisible();
+  await expect(panel).not.toBeFocused();
+  expect(await page.evaluate(() => document.activeElement?.tagName)).toBe(before);
+});
+
+test('закрытая посетителем панель не возвращается, пока он на последнем развороте; после ухода открывается снова', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  const panel = page.locator('#contact-panel');
+  for (let i = 0; i < 10; i++) await page.keyboard.press('ArrowRight');
+  await expect(panel).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
+  await page.keyboard.press('ArrowRight'); // на последнем развороте дальше некуда, но он тот же
+  await page.waitForTimeout(500);
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
+  await expect(panel).toBeHidden();
+  // уходим с последнего разворота (на телефоне первое нажатие может сменить только страницу)
+  for (let i = 0; i < 2; i++) {
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(150);
+    if ((await page.locator('#counter').getAttribute('data-spread')) === '3') break;
+  }
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '3');
+  await expect(panel).toBeHidden();
+  for (let i = 0; i < 2; i++) {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(150);
+    if ((await page.locator('#counter').getAttribute('data-spread')) === '4') break;
+  }
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
+  await expect(panel).toBeVisible();
+});
