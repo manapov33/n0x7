@@ -36,11 +36,13 @@ export async function boot(): Promise<void> {
   document.body.append(canvas, counter, loading);
 
   let app: { dispose(): void } | undefined;
+  let detachControls: (() => void) | undefined;
   let failed = false;
   const fail = () => {
     if (failed) return;
     failed = true;
     root.removeAttribute('data-mode');
+    detachControls?.();
     app?.dispose();
     canvas.remove();
     counter.remove();
@@ -60,6 +62,9 @@ export async function boot(): Promise<void> {
       created.dispose();
       return;
     }
+    const { attachControls } = await import('./controls/controls.ts');
+    if (failed) return;
+    detachControls = attachControls(canvas, created.model);
     await created.ready;
     if (!failed) loading.remove();
   } catch {
