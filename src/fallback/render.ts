@@ -1,4 +1,4 @@
-import type { Site, Spread } from '../content/types';
+import type { Site, Spread } from '../content/types.ts';
 
 const esc = (v: string): string =>
   v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

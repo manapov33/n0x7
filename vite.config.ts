@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
-import { site } from './src/content/site';
-import { renderFallback } from './src/fallback/render';
+import { site } from './src/content/site.ts';
+import { renderFallback } from './src/fallback/render.ts';
 
 function fallbackPlugin(): Plugin {
   return {

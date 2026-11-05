@@ -1,4 +1,4 @@
-import type { Site } from './types';
+import type { Site } from './types.ts';
 
 export const site: Site = {
   name: 'N0X7',
