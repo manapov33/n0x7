@@ -78,3 +78,19 @@ test('CSS canvas не использует единицы vh', async ({ request 
   const rule = /#scene\{[^}]*\}/.exec(css)![0];
   expect(rule).not.toMatch(/v[hw]|dvh|svh|lvh/);
 });
+
+test('главный чанк не загрузился (обрыв): запасная страница, не чёрный экран', async ({ page }) => {
+  await page.route('**/assets/index-*.js', (r) => r.abort());
+  await page.goto('/');
+  await expect(page.locator('#fallback')).toBeVisible();
+  await expect(page.locator('html')).not.toHaveAttribute('data-mode', 'book');
+  await expect(page.locator('canvas')).toHaveCount(0);
+});
+
+test('главный чанк завис: через 8 с сторожевой таймер возвращает запасную страницу', async ({ page }) => {
+  await page.route('**/assets/index-*.js', () => {}); // запрос не отвечает и не завершается
+  await page.goto('/', { waitUntil: 'commit' });
+  await expect(page.locator('html')).toHaveAttribute('data-mode', 'book'); // до таймера экран скрыт
+  await expect(page.locator('#fallback')).toBeVisible({ timeout: 12000 });
+  await expect(page.locator('html')).not.toHaveAttribute('data-mode', 'book');
+});

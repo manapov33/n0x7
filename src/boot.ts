@@ -21,6 +21,7 @@ function detectEnv(): Env {
 }
 
 export async function boot(): Promise<void> {
+  (window as unknown as { __n0x7Booted?: boolean }).__n0x7Booted = true; // сторожевой таймер из index.html
   const root = document.documentElement;
   if (chooseMode(detectEnv()) === 'fallback') {
     root.removeAttribute('data-mode');

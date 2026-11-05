@@ -12,6 +12,21 @@
         if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
           document.documentElement.dataset.mode = 'book';
         }
+        // Vite выкидывает onerror с модульного скрипта, поэтому ловим ошибку загрузки скрипта
+        // в фазе захвата (события ресурсов не всплывают).
+        addEventListener(
+          'error',
+          function (e) {
+            var t = e.target;
+            if (t && t.tagName === 'SCRIPT') document.documentElement.removeAttribute('data-mode');
+          },
+          true,
+        );
+        // Сторожевой таймер: если главный модуль не дошёл до boot() (обрыв, зависший запрос),
+        // экран не должен остаться чёрным. boot() ставит window.__n0x7Booted первой строкой.
+        setTimeout(function () {
+          if (!window.__n0x7Booted) document.documentElement.removeAttribute('data-mode');
+        }, 8000);
       } catch (e) {}
     </script>
     <link rel="stylesheet" href="/src/fallback/fonts.css" />
