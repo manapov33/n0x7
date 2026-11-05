@@ -7,6 +7,8 @@ export type Ui = {
   setModel(model: BookModel): void;
   /** Перечитать номер разворота из модели и обновить счётчик и подсказку. */
   update(): void;
+  /** Тап мимо панели: если она открыта, закрывает её и возвращает true (тап не должен листать). */
+  dismissOutside(): boolean;
   /** Убрать интерфейс и снять слушатели. */
   destroy(): void;
 };
@@ -91,6 +93,10 @@ export function createUi(root: HTMLElement, site: Site): Ui {
   };
 
   cta.addEventListener('click', () => {
+    if (!panel.hidden) {
+      closePanel();
+      return;
+    }
     open();
     model?.goTo(last);
   });
@@ -108,6 +114,11 @@ export function createUi(root: HTMLElement, site: Site): Ui {
       update();
     },
     update,
+    dismissOutside() {
+      if (panel.hidden) return false;
+      closePanel();
+      return true;
+    },
     destroy() {
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('resize', update);

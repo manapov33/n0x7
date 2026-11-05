@@ -76,7 +76,10 @@ test('кнопка работает во время загрузки: панел
   await expect(page.locator('#contact-panel a[href^="tel:"]')).toBeVisible();
   await expect(page.locator('#loading')).toHaveCount(0, { timeout: 15000 });
   await expect(page.locator('#counter')).toHaveAttribute('data-spread', '0');
+  await button(page).click(); // панель уже открыта: нажатие закрывает её
+  await expect(page.locator('#contact-panel')).toBeHidden();
   await button(page).click();
+  await expect(page.locator('#contact-panel')).toBeVisible();
   await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
 });
 
@@ -221,4 +224,34 @@ test('десктоп: при ресайзе до ширины телефона �
   await expect(page.getByText('листайте')).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.getByText('листайте')).toBeHidden();
+});
+
+test('тап мимо открытой панели закрывает её и не листает страницу', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  await button(page).click();
+  const panel = page.locator('#contact-panel');
+  await expect(panel).toBeVisible();
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
+  await page.waitForTimeout(900);
+  await page.mouse.click(100, 300); // левая половина экрана вне панели: раньше листала назад
+  await expect(panel).toBeHidden();
+  await page.waitForTimeout(900);
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '4');
+  await page.mouse.click(100, 300); // теперь панели нет, тап листает как обычно
+  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '3');
+});
+
+test('повторное нажатие «Обсудить проект» закрывает панель, ещё одно открывает', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  const panel = page.locator('#contact-panel');
+  await button(page).click();
+  await expect(panel).toBeVisible();
+  await button(page).click();
+  await expect(panel).toBeHidden();
+  await expect(button(page)).toHaveAttribute('aria-expanded', 'false');
+  await button(page).click();
+  await expect(panel).toBeVisible();
+  await expect(button(page)).toHaveAttribute('aria-expanded', 'true');
 });

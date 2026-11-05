@@ -109,6 +109,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
         prev: after(() => pick().prev()),
         // Закрытая обложка стоит по центру: левая её половина тоже открывает журнал.
         tap: after((side: 'left' | 'right') => {
+          if (ui.dismissOutside()) return; // тап мимо открытой панели только закрывает её
           if (model.spread === 0 || side === 'right') pick().next();
           else pick().prev();
         }),
