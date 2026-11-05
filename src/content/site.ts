@@ -1,0 +1,60 @@
+import type { Site } from './types';
+
+export const site: Site = {
+  name: 'N0X7',
+  tagline: 'сайты и приложения на заказ',
+  telegramUrl: 'https://t.me/PLACEHOLDER',
+  phone: '+7PLACEHOLDER',
+  services: [
+    { name: 'Сайт-визитка и лендинг', priceFrom: 'PLACEHOLDER' },
+    { name: 'Интернет-магазин', priceFrom: 'PLACEHOLDER' },
+    { name: 'Мобильное приложение', priceFrom: 'PLACEHOLDER' },
+  ],
+  spreads: [
+    {
+      id: 'cover',
+      kind: 'cover',
+      title: 'N0X7',
+      right: '/pages/cover-right.webp',
+      alt: 'Обложка журнала студии N0X7',
+    },
+    {
+      id: 'coffee',
+      kind: 'work',
+      title: 'Зерно и Дым',
+      task: 'Сайт кофейни с меню и онлайн-заказом навынос',
+      isConcept: true,
+      left: '/pages/coffee-left.webp',
+      right: '/pages/coffee-right.webp',
+      alt: 'Концепт сайта кофейни «Зерно и Дым»',
+    },
+    {
+      id: 'beauty',
+      kind: 'work',
+      title: 'Лилея',
+      task: 'Интернет-магазин натуральной косметики',
+      isConcept: true,
+      left: '/pages/beauty-left.webp',
+      right: '/pages/beauty-right.webp',
+      alt: 'Концепт интернет-магазина косметики «Лилея»',
+    },
+    {
+      id: 'residence',
+      kind: 'work',
+      title: 'Резиденция Север',
+      task: 'Сайт жилого комплекса с подбором квартир',
+      isConcept: true,
+      left: '/pages/residence-left.webp',
+      right: '/pages/residence-right.webp',
+      alt: 'Концепт сайта жилого комплекса «Резиденция Север»',
+    },
+    {
+      id: 'services',
+      kind: 'services',
+      title: 'Услуги и контакты',
+      left: '/pages/services-left.webp',
+      right: '/pages/services-right.webp',
+      alt: 'Услуги студии и контакты',
+    },
+  ],
+};

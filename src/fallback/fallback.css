@@ -1,0 +1,100 @@
+:root {
+  --bg: #0b0a09;
+  --fg: #ece6da;
+  --muted: #9a9183;
+  --accent: #e0b36a;
+}
+
+html[data-mode='book'] #fallback {
+  display: none;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Manrope', system-ui, sans-serif;
+  line-height: 1.55;
+}
+
+#fallback {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 64px 20px 96px;
+}
+
+#fallback h1 {
+  font-family: 'Cormorant', serif;
+  font-size: clamp(56px, 12vw, 104px);
+  font-weight: 500;
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+
+#fallback h2 {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 56px 0 16px;
+}
+
+#fallback h3 {
+  font-family: 'Cormorant', serif;
+  font-size: 30px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+
+#fallback a {
+  color: var(--accent);
+}
+
+.tagline {
+  color: var(--muted);
+  margin: 4px 0 28px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.work {
+  padding: 20px 0;
+  border-top: 1px solid #2a2622;
+}
+
+.work p {
+  margin: 4px 0;
+}
+
+.badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.services {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.services li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid #2a2622;
+}
+
+.price {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+}
