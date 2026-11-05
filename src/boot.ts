@@ -1,5 +1,6 @@
 import { site } from './content/site.ts';
 import { attachLamp, createUi } from './ui/ui.ts';
+import { LOAD_TIMEOUT_MS, withTimeout } from './util/timeout.ts';
 
 export type Env = { webgl: boolean; reducedMotion: boolean };
 
@@ -20,7 +21,8 @@ function detectEnv(): Env {
   return { webgl, reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches };
 }
 
-export async function boot(): Promise<void> {
+export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> {
+  const load = <T>(p: Promise<T>, what: string) => withTimeout(p, o.importTimeoutMs ?? LOAD_TIMEOUT_MS, what);
   (window as unknown as { __n0x7Booted?: boolean }).__n0x7Booted = true; // сторожевой таймер из index.html
   const root = document.documentElement;
   if (chooseMode(detectEnv()) === 'fallback') {
@@ -54,10 +56,11 @@ export async function boot(): Promise<void> {
   };
 
   try {
-    const { createApp, PAGE_W } = await import('./scene/scene.ts');
+    const { createApp, PAGE_W } = await load(import('./scene/scene.ts'), 'scene');
     if (failed) return;
-    const { cameraFor, createPhoneCommands, createPhoneNavigator, isPhone, phoneDragWidthPx } = await import(
-      './controls/phone.ts'
+    const { cameraFor, createPhoneCommands, createPhoneNavigator, isPhone, phoneDragWidthPx } = await load(
+      import('./controls/phone.ts'),
+      'phone',
     );
     if (failed) return;
     let syncCamera = () => {};
@@ -74,7 +77,7 @@ export async function boot(): Promise<void> {
     }
     ui.setModel(created.model);
     detachLamp = attachLamp(window, (nx, ny) => created.setLamp(nx, ny), matchMedia('(hover: hover)').matches);
-    const { attachControls } = await import('./controls/controls.ts');
+    const { attachControls } = await load(import('./controls/controls.ts'), 'controls');
     if (failed) return;
 
     const model = created.model;

@@ -15,6 +15,7 @@ import { buildSheets, createBookModel, type BookModel } from '../book/model.ts';
 import { createBookView } from '../book/view.ts';
 import { site } from '../content/site.ts';
 import { createTextureStore } from '../textures/store.ts';
+import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { fitCamera } from './camera.ts';
 
 export const PAGE_W = 3;
@@ -34,12 +35,15 @@ export type App = {
 };
 
 export type AppHooks = { onSpread?(spread: number): void };
+export type AppOptions = { loadTimeoutMs?: number };
 
 export function createApp(
   canvas: HTMLCanvasElement,
   onFail: (why: string) => void,
   hooks: AppHooks = {},
+  options: AppOptions = {},
 ): App {
+  const loadTimeoutMs = options.loadTimeoutMs ?? LOAD_TIMEOUT_MS;
   const spreads = site.spreads;
   const model = createBookModel(spreads.length);
 
@@ -56,21 +60,26 @@ export function createApp(
   let raf = 0;
   const textures = new Set<Texture>();
   const loader = new TextureLoader();
+  // Зависший запрос не должен держать экран загрузки вечно: по таймауту отказ уходит в повтор и onFatal хранилища.
   const loadTexture = (url: string) =>
-    new Promise<Texture>((resolve, reject) => {
-      loader.load(
-        url,
-        (t) => {
-          if (disposed) return t.dispose();
-          t.colorSpace = SRGBColorSpace;
-          t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-          textures.add(t);
-          resolve(t);
-        },
-        undefined,
-        reject,
-      );
-    });
+    withTimeout(
+      new Promise<Texture>((resolve, reject) => {
+        loader.load(
+          url,
+          (t) => {
+            if (disposed) return t.dispose();
+            t.colorSpace = SRGBColorSpace;
+            t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+            textures.add(t);
+            resolve(t);
+          },
+          undefined,
+          reject,
+        );
+      }),
+      loadTimeoutMs,
+      `texture:${url}`,
+    );
 
   function fail(why: string) {
     if (disposed) return;

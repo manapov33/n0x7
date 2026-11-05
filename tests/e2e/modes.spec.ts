@@ -94,3 +94,29 @@ test('главный чанк завис: через 8 с сторожевой �
   await expect(page.locator('#fallback')).toBeVisible({ timeout: 12000 });
   await expect(page.locator('html')).not.toHaveAttribute('data-mode', 'book');
 });
+
+// Виртуальные часы: ждать настоящие 25 с не нужно, таймеры страницы прокручиваются вручную.
+test('запрос текстуры повис: после таймаута и повтора загрузка кончается запасной страницей', async ({ page }) => {
+  await page.route('**/pages/*.webp', () => {}); // ни ответа, ни ошибки
+  await page.clock.install();
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(1);
+  for (let i = 0; i < 3; i++) {
+    await page.waitForTimeout(300);
+    await page.clock.fastForward(26000); // таймаут первой попытки, затем повтора
+  }
+  await expect(page.locator('#fallback')).toBeVisible();
+  await expect(page.locator('#loading')).toHaveCount(0);
+  await expect(page.locator('canvas')).toHaveCount(0);
+});
+
+test('чанк сцены завис: после таймаута запасная страница', async ({ page }) => {
+  await page.route('**/assets/scene-*.js', () => {});
+  await page.clock.install();
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(1);
+  await page.waitForTimeout(300);
+  await page.clock.fastForward(26000);
+  await expect(page.locator('#fallback')).toBeVisible();
+  await expect(page.locator('#loading')).toHaveCount(0);
+});
