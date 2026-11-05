@@ -24,25 +24,40 @@ test('10 быстрых ArrowRight подряд дают data-spread="4"', async
   await expect(spread(page)).toHaveAttribute('data-spread', '4');
 });
 
-test('перетаскивание мышью с правого края влево даёт data-spread="1"', async ({ page }) => {
-  test.skip(test.info().project.name === 'phone', 'мышь — только десктоп');
+// Геометрия закрытой книги: страница-обложка по центру, камера из fitCamera ('page', FOV 35, поля 8%).
+async function pageEdge(page: Page) {
   const box = (await page.locator('canvas').boundingBox())!;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + box.width - 4, y);
+  const halfTan = Math.tan((35 * Math.PI) / 360);
+  const aspect = box.width / box.height;
+  const camH = Math.max((4 * 1.16) / 2 / halfTan, (3 * 1.16) / 2 / (halfTan * aspect));
+  const pxPerUnit = box.height / 2 / (camH * halfTan);
+  return {
+    y: box.y + box.height / 2,
+    edgeX: box.x + box.width / 2 + 1.5 * pxPerUnit, // правый край обложки
+    spreadPx: 6 * pxPerUnit,
+  };
+}
+
+test('перетаскивание от края страницы на 60% разворота листает', async ({ page }) => {
+  test.skip(test.info().project.name === 'phone', 'мышь — только десктоп');
+  await page.waitForTimeout(1500); // камера доехала до цели
+  const g = await pageEdge(page);
+  await page.mouse.move(g.edgeX - 6, g.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.5, y, { steps: 12 });
-  await page.mouse.move(box.x + box.width * 0.1, y, { steps: 12 });
+  await page.mouse.move(g.edgeX - 6 - g.spreadPx * 0.3, g.y, { steps: 12 });
+  await page.mouse.move(g.edgeX - 6 - g.spreadPx * 0.6, g.y, { steps: 12 });
+  await page.waitForTimeout(300);
   await page.mouse.up();
   await expect(spread(page)).toHaveAttribute('data-spread', '1');
 });
 
-test('короткое перетаскивание на 10% оставляет data-spread="0"', async ({ page }) => {
+test('короткое перетаскивание на 10% разворота оставляет data-spread="0"', async ({ page }) => {
   test.skip(test.info().project.name === 'phone', 'мышь — только десктоп');
-  const box = (await page.locator('canvas').boundingBox())!;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + box.width - 4, y);
+  await page.waitForTimeout(1500);
+  const g = await pageEdge(page);
+  await page.mouse.move(g.edgeX - 6, g.y);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.9 - 4, y, { steps: 10 });
+  await page.mouse.move(g.edgeX - 6 - g.spreadPx * 0.1, g.y, { steps: 10 });
   await page.waitForTimeout(300);
   await page.mouse.up();
   await page.waitForTimeout(900);

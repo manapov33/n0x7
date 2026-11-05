@@ -64,7 +64,9 @@ export async function boot(): Promise<void> {
     }
     const { attachControls } = await import('./controls/controls.ts');
     if (failed) return;
-    detachControls = attachControls(canvas, created.model);
+    detachControls = attachControls(canvas, created.model, {
+      spreadWidthPx: () => created.spreadWidthPx(),
+    });
     await created.ready;
     if (!failed) loading.remove();
   } catch {

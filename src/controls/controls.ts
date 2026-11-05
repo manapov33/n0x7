@@ -28,7 +28,11 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 export function attachControls(
   el: HTMLElement,
   c: Commands,
-  o: { now?: () => number } = {},
+  o: {
+    now?: () => number;
+    /** Ширина разворота на экране в px; по умолчанию ширина элемента. */
+    spreadWidthPx?: () => number;
+  } = {},
 ): () => void {
   const now = o.now ?? (() => performance.now());
   const prevTouchAction = el.style.touchAction;
@@ -76,7 +80,7 @@ export function attachControls(
 
   // --- указатель ---
   let g: Gesture | null = null;
-  const width = () => el.getBoundingClientRect().width;
+  const width = () => (o.spreadWidthPx ? o.spreadWidthPx() : el.getBoundingClientRect().width);
 
   const fractionOf = (gs: Gesture, x: number): number | null => {
     const w = width();

@@ -28,6 +28,8 @@ export type App = {
   ready: Promise<void>;
   setCameraTarget(x: number, target: 'spread' | 'page'): void;
   setLamp(nx: number, ny: number): void;
+  /** Ширина разворота на экране в CSS px (по текущей камере). */
+  spreadWidthPx(): number;
   dispose(): void;
 };
 
@@ -46,7 +48,7 @@ export function createApp(
     renderer = new WebGLRenderer({ canvas, antialias: true });
   } catch {
     onFail('renderer');
-    return { model, ready: Promise.resolve(), setCameraTarget() {}, setLamp() {}, dispose() {} };
+    return { model, ready: Promise.resolve(), setCameraTarget() {}, setLamp() {}, spreadWidthPx: () => 0, dispose() {} };
   }
 
   let disposed = false;
@@ -194,6 +196,10 @@ export function createApp(
     ready: store.ensure(0),
     setCameraTarget(x, target) {
       camTarget = { x, kind: target };
+    },
+    spreadWidthPx() {
+      const pxPerUnit = canvas.clientHeight / 2 / (cam.h * Math.tan((FOV * Math.PI) / 360));
+      return 2 * PAGE_W * pxPerUnit;
     },
     setLamp(nx, ny) {
       lamp.position.set(-1.5 + nx * 3, 1.5 + ny * 3, 9.5);

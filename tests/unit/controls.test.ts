@@ -18,14 +18,14 @@ function mk(begin = true) {
   };
 }
 
-function setup(begin = true, width = 1000) {
+function setup(begin = true, width = 1000, spreadWidthPx?: () => number) {
   c = mk(begin);
   el = document.createElement('div');
   document.body.append(el);
   el.getBoundingClientRect = () =>
     ({ left: 0, top: 0, width, height: 800, right: width, bottom: 800, x: 0, y: 0 }) as DOMRect;
   el.setPointerCapture = vi.fn();
-  detach = attachControls(el, c, { now });
+  detach = attachControls(el, c, { now, spreadWidthPx });
 }
 
 function ptr(type: string, x: number, y: number, extra: Record<string, unknown> = {}) {
@@ -225,6 +225,31 @@ describe('указатель', () => {
       expect(Number.isFinite(call[0])).toBe(true);
     }
     expect(c.beginDrag.mock.calls.length === 0 || c.endDrag.mock.calls.length === 1).toBe(true);
+  });
+
+  it('доля считается от ширины разворота, а не элемента', () => {
+    detach();
+    el.remove();
+    setup(true, 1000, () => 400);
+    ptr('pointerdown', 700, 400);
+    ptr('pointermove', 500, 400);
+    expect(c.moveDrag).toHaveBeenLastCalledWith(0.5);
+    ptr('pointermove', 100, 400);
+    expect(c.moveDrag).toHaveBeenLastCalledWith(1);
+  });
+
+  it('ширина разворота 0 или NaN: переворот не начинается', () => {
+    for (const w of [0, NaN]) {
+      detach();
+      el.remove();
+      setup(true, 1000, () => w);
+      ptr('pointerdown', 900, 400);
+      ptr('pointermove', 500, 400);
+      ptr('pointerup', 500, 400);
+      expect(c.beginDrag).not.toHaveBeenCalled();
+      expect(c.moveDrag).not.toHaveBeenCalled();
+      expect(c.endDrag).not.toHaveBeenCalled();
+    }
   });
 
   it('другой указатель во время жеста игнорируется', () => {
