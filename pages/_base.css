@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1200px; height: 1600px; }
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  background: #ece6da;
+  color: #0b0a09;
+  font-family: 'Manrope', system-ui, sans-serif;
+  border: 24px solid #0b0a09;
+}
+.name { font: 500 120px/1 'Cormorant', serif; }
+.tag { font: 400 40px/1 'JetBrains Mono', monospace; letter-spacing: 0.3em; color: #9a9183; }
