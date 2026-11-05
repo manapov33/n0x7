@@ -21,6 +21,7 @@ import { fitCamera } from './camera.ts';
 export const PAGE_W = 3;
 const PAGE_H = 4;
 const FOV = 35;
+const CAM_EPS = 5e-4; // ближе этого камера считается доехавшей
 const TABLE_URL = '/scene/table.webp';
 
 export type App = {
@@ -58,6 +59,8 @@ export function createApp(
   let disposed = false;
   let contextLost = false;
   let raf = 0;
+  // Рисуем только когда что-то изменилось: иначе телефон зря греется в покое.
+  let dirty = true;
   const textures = new Set<Texture>();
   const loader = new TextureLoader();
   // Зависший запрос не должен держать экран загрузки вечно: по таймауту отказ уходит в повтор и onFatal хранилища.
@@ -71,6 +74,7 @@ export function createApp(
             t.colorSpace = SRGBColorSpace;
             t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
             textures.add(t);
+            dirty = true;
             resolve(t);
           },
           undefined,
@@ -143,6 +147,7 @@ export function createApp(
     aspect = w / h;
     camera.aspect = aspect;
     camera.updateProjectionMatrix();
+    dirty = true;
   }
 
   resize();
@@ -167,19 +172,31 @@ export function createApp(
       void store.ensure(Math.max(0, lastSpread - 1));
       void store.ensure(lastSpread);
     }
+    const wasSettled = model.isSettled();
     model.update(dt);
-    view.update();
 
     const hT = targetHeight();
+    let moving = false;
     if (!camInit) {
       cam.x = camTarget.x;
       cam.h = hT;
       camInit = true;
-    } else {
+      moving = true;
+    } else if (Math.abs(camTarget.x - cam.x) > CAM_EPS || Math.abs(hT - cam.h) > CAM_EPS) {
       const k = 1 - Math.exp(-dt * 6);
       cam.x += (camTarget.x - cam.x) * k;
       cam.h += (hT - cam.h) * k;
+      if (Math.abs(camTarget.x - cam.x) <= CAM_EPS && Math.abs(hT - cam.h) <= CAM_EPS) {
+        cam.x = camTarget.x;
+        cam.h = hT;
+      }
+      moving = true;
     }
+
+    // Модель дорисовывается и в кадре, где она только что успокоилась.
+    if (!dirty && wasSettled && model.isSettled() && !moving) return;
+    dirty = false;
+    view.update();
     camera.position.set(cam.x, 0, cam.h);
     renderer.render(scene, camera);
   }
@@ -205,6 +222,7 @@ export function createApp(
     ready: store.ensure(0),
     setCameraTarget(x, target) {
       camTarget = { x, kind: target };
+      dirty = true;
     },
     spreadWidthPx() {
       const pxPerUnit = canvas.clientHeight / 2 / (cam.h * Math.tan((FOV * Math.PI) / 360));
@@ -212,6 +230,7 @@ export function createApp(
     },
     setLamp(nx, ny) {
       lamp.position.set(-1.5 + nx * 3, 1.5 + ny * 3, 9.5);
+      dirty = true;
     },
     dispose,
   };
