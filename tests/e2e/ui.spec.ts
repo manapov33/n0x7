@@ -118,3 +118,29 @@ test('запасная страница после потери контекст
   await expect(page.locator('#fallback')).toBeVisible();
   await expect(page.locator('#ui-root')).toHaveCount(0);
 });
+
+test('оверлей не перехватывает указатель вне кнопки и панели', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  // что лежит под точкой: 'scene' или ближайший интерактивный предок оверлея
+  const hit = (point: { x: number; y: number } | { sel: string; fx: number; fy: number }) =>
+    page.evaluate((p) => {
+      let x: number, y: number;
+      if ('sel' in p) {
+        const r = document.querySelector(p.sel)!.getBoundingClientRect();
+        x = r.left + r.width * p.fx;
+        y = r.top + r.height * p.fy;
+      } else ({ x, y } = p);
+      const el = document.elementFromPoint(x, y)!;
+      if (el.id === 'scene') return 'scene';
+      return el.closest('#contact-panel') ? 'panel' : el.closest('.ui-cta') ? 'cta' : el.tagName;
+    }, point);
+  const vw = page.viewportSize()!.width;
+  expect(await hit({ x: vw - 10, y: 20 })).toBe('scene'); // полоса шапки, подальше от кнопки
+  expect(await hit({ sel: '.ui-brand', fx: 0.95, fy: 0.5 })).toBe('scene');
+  expect(await hit({ sel: '.ui-hint', fx: 0.5, fy: 0.5 })).toBe('scene');
+  expect(await hit({ sel: '#counter', fx: 0.5, fy: 0.5 })).toBe('scene');
+  expect(await hit({ sel: '.ui-cta', fx: 0.5, fy: 0.5 })).toBe('cta');
+  await button(page).click();
+  expect(await hit({ sel: '#contact-panel', fx: 0.5, fy: 0.9 })).toBe('panel');
+});

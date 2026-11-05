@@ -13,8 +13,13 @@ html[data-mode='book'] #ui-root {
 }
 
 #ui-root > * {
-  pointer-events: auto;
   z-index: 1;
+}
+
+/* Указатель перехватывают только интерактивные элементы; остальное пропускает его к canvas. */
+.ui-cta,
+#contact-panel {
+  pointer-events: auto;
 }
 
 /* Затемнение сверху и снизу: подписи читаются на любом освещённом столе. */
