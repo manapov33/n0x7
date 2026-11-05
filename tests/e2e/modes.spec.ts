@@ -61,4 +61,20 @@ test('изменение размера окна меняет буфер canvas 
   const after = await size();
   expect(after.h).toBe(Math.round(1000 * Math.min(before.dpr, 2)));
   expect(after.w / after.h).toBeCloseTo(0.8, 2);
+
+  // Буфер и показанный бокс должны браться из одного размера (не 100vh: на мобильных он выше innerHeight).
+  const box = await canvas.evaluate((c: HTMLCanvasElement) => {
+    const r = c.getBoundingClientRect();
+    return { w: r.width, h: r.height, iw: innerWidth, ih: innerHeight, cssH: getComputedStyle(c).height };
+  });
+  expect(box.w / box.h).toBeCloseTo(after.w / after.h, 2);
+  expect(box.w / box.h).toBeCloseTo(box.iw / box.ih, 2);
+});
+
+test('CSS canvas не использует единицы vh', async ({ request }) => {
+  const html = await (await request.get('/')).text();
+  const href = /href="(\/assets\/[^"]+\.css)"/.exec(html)![1]!;
+  const css = await (await request.get(href)).text();
+  const rule = /#scene\{[^}]*\}/.exec(css)![0];
+  expect(rule).not.toMatch(/v[hw]|dvh|svh|lvh/);
 });
