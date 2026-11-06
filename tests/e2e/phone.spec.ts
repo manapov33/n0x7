@@ -23,7 +23,6 @@ async function swipe(page: Page, from: [number, number], to: [number, number], s
   await cdp.detach();
 }
 
-/** Центр камеры в мире не читается снаружи, поэтому проверяем по пикселям: поля canvas вокруг страницы не пустые. */
 async function settle(page: Page) {
   await page.waitForTimeout(1500);
 }
