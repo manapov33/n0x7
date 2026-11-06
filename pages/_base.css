@@ -14,3 +14,117 @@ body {
 }
 .name { font: 500 120px/1 'Cormorant', serif; }
 .tag { font: 400 40px/1 'JetBrains Mono', monospace; letter-spacing: 0.3em; color: #9a9183; }
+
+/* ───────────── Шаблон разворота работы ─────────────
+   Общие классы для всех работ (Лилея, Зерно и Дым, Резиденция Север).
+   Страница 1200×1600, в журнале на телефоне она ужимается до ~336 px по ширине (×0.28),
+   поэтому любой текст не мельче 36 px (≈10 px на экране), основной — от 40 px.
+   Свой вид сайта (цвета бренда, сетка экрана) лежит в <style> самой страницы. */
+body.work {
+  --paper: #ece6da;
+  --ink: #15120f;
+  --muted: #6e6458;
+  --rule: #cfc6b6;
+  --w-margin: 88px;
+  display: block;
+  position: relative;
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--ink);
+  background: var(--paper);
+}
+/* Матовая бумага: лёгкое затенение к корешку, как у настоящего журнала. */
+body.work.is-left { background: linear-gradient(90deg, var(--paper) 78%, #e2dbcd 100%); }
+body.work.is-right { background: linear-gradient(270deg, var(--paper) 78%, #e2dbcd 100%); }
+
+/* Колонтитул сверху и подпись с номером страницы снизу. */
+.w-head, .w-foot {
+  position: absolute;
+  left: var(--w-margin);
+  right: var(--w-margin);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font: 500 36px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.w-head { top: 72px; }
+.w-foot { bottom: 72px; }
+.w-foot .w-folio { font: 500 56px/1 'Cormorant', serif; letter-spacing: 0; color: var(--ink); }
+.w-foot .w-note b { color: var(--ink); font-weight: 500; }
+
+/* Рамка настольного браузера. */
+.w-browser {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 2px 0 rgba(21, 18, 15, 0.06), 0 30px 60px -20px rgba(21, 18, 15, 0.35), 0 0 0 2px rgba(21, 18, 15, 0.08);
+}
+.w-browser-bar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 28px;
+  background: #f3efe8;
+  border-bottom: 2px solid #e4ddd1;
+}
+.w-browser-bar i { width: 18px; height: 18px; border-radius: 50%; background: #d6cec1; }
+.w-browser-bar .w-url { flex: 0 0 38%; height: 30px; margin: 0 auto; border-radius: 15px; background: #e7e1d6; }
+.w-browser-bar .w-url + i { visibility: hidden; }
+.w-browser-screen { position: relative; overflow: hidden; }
+
+/* Рамка телефона. */
+.w-phone {
+  position: absolute;
+  padding: 18px;
+  border-radius: 76px;
+  background: #15120f;
+  box-shadow: 0 40px 70px -24px rgba(21, 18, 15, 0.5), inset 0 0 0 3px #3a342e;
+}
+.w-phone-screen { position: relative; overflow: hidden; height: 100%; border-radius: 58px; background: #fff; }
+.w-phone-screen::before {
+  content: '';
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  left: 50%;
+  width: 132px;
+  height: 38px;
+  margin-left: -66px;
+  border-radius: 19px;
+  background: #15120f;
+}
+
+/* Подпись к работе: пометка «концепт», название, строка о задаче, характеристики. */
+.w-caption { position: absolute; }
+.w-tag {
+  display: inline-block;
+  padding: 12px 22px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 40px;
+  font: 500 36px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.w-title { margin: 40px 0 0; font: 500 168px/0.9 'Cormorant', serif; letter-spacing: -0.02em; }
+.w-task { margin: 36px 0 0; font: 400 46px/1.25 'Manrope', sans-serif; letter-spacing: -0.01em; }
+.w-specs { margin: 56px 0 0; padding: 0; border-top: 2px solid var(--rule); }
+.w-specs > div { padding: 26px 0; border-bottom: 2px solid var(--rule); }
+.w-specs dt {
+  font: 500 36px/1 'JetBrains Mono', monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.w-specs dd { margin: 14px 0 0; font: 400 42px/1.2 'Manrope', sans-serif; }
+.w-swatches { display: flex; gap: 14px; margin-top: 18px; }
+.w-swatches span { width: 64px; height: 64px; border-radius: 50%; box-shadow: inset 0 0 0 2px rgba(21, 18, 15, 0.12); }
+
+/* Значки рисуем SVG: стрелок, звезды и сердца нет в наших шрифтах, а системный запасной шрифт на каждой машине свой. */
+.ico { display: inline-block; width: 0.9em; height: 0.9em; vertical-align: -0.1em; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.ico.star { fill: currentColor; stroke-width: 1; }

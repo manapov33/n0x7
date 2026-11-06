@@ -4,9 +4,94 @@
 <meta charset="utf-8">
 <title>beauty-left</title>
 <link rel="stylesheet" href="_base.css">
+<style>
+  /* Вид сайта «Лилеи»: сливочный фон, тёплый коричневый, пыльная роза. */
+  .site { --cream: #f7f2eb; --brown: #3d3029; --rose: #b98a80; color: var(--brown); background: var(--cream); }
+  .w-browser { left: var(--w-margin); right: var(--w-margin); top: 156px; }
+
+  .hero {
+    position: relative;
+    height: 660px;
+    background: #efe6dc url('../assets/images/beauty-hero.jpg') right center / cover no-repeat;
+  }
+  .nav {
+    position: absolute;
+    inset: 0 0 auto 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 34px 44px;
+    font: 500 36px/1 'Manrope', sans-serif;
+  }
+  .nav span + span { margin-left: 38px; }
+  .nav .bag::after {
+    content: '2';
+    display: inline-block;
+    width: 44px;
+    height: 44px;
+    margin: -6px 0 0 12px;
+    border-radius: 50%;
+    background: var(--brown);
+    color: var(--cream);
+    font-size: 26px;
+    line-height: 44px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .offer { position: absolute; left: 556px; right: 40px; top: 150px; }
+  .brand { font: 500 148px/0.9 'Cormorant', serif; letter-spacing: -0.02em; }
+  .lead { margin-top: 26px; font: italic 500 54px/1.08 'Cormorant', serif; }
+  .btn {
+    display: inline-block;
+    margin-top: 40px;
+    padding: 24px 40px;
+    border-radius: 60px;
+    background: var(--brown);
+    color: var(--cream);
+    font: 600 36px/1 'Manrope', sans-serif;
+  }
+
+  .best { padding: 38px 44px 46px; }
+  .best-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .best-head h2 { margin: 0; font: 500 64px/1 'Cormorant', serif; }
+  .best-head span { font: 500 36px/1 'Manrope', sans-serif; color: var(--rose); }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; margin-top: 30px; }
+  .tile .img { height: 250px; border-radius: 14px; background-color: #efe6dc; background-repeat: no-repeat; }
+  .tile b { display: block; margin-top: 18px; font: 500 50px/1 'Cormorant', serif; }
+  .tile small { display: block; margin-top: 8px; font: 500 36px/1 'Manrope', sans-serif; color: #75665d; }
+  /* Кадры товаров вырезаны из снимков бренда. */
+  .t1 { background-image: url('../assets/images/beauty-hero.jpg'); background-size: 740px auto; background-position: -60px -71px; }
+  .t2 { background-image: url('../assets/images/beauty-detail.jpg'); background-size: cover; background-position: center 45%; }
+  .t3 { background-image: url('../assets/images/beauty-texture.jpg'); background-size: 150% auto; background-position: 40% 62%; }
+</style>
 </head>
-<body>
-<div class="name">beauty-left</div>
-<div class="tag">PLACEHOLDER</div>
+<body class="work is-left">
+  <header class="w-head"><span>N0X7 · Работы</span><span>Лилея</span></header>
+
+  <div class="w-browser">
+    <div class="w-browser-bar"><i></i><i></i><i></i><span class="w-url"></span><i></i></div>
+    <div class="w-browser-screen site">
+      <section class="hero">
+        <nav class="nav">
+          <div><span>Каталог</span><span>Уход</span><span>Наборы</span></div>
+          <div class="bag">Корзина</div>
+        </nav>
+        <div class="offer">
+          <div class="brand">Лилея</div>
+          <div class="lead">Натуральный уход<br>с лепестками лилии</div>
+          <div class="btn">Выбрать уход <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
+        </div>
+      </section>
+      <section class="best">
+        <div class="best-head"><h2>Бестселлеры</h2><span>Весь каталог <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span></div>
+        <div class="tiles">
+          <div class="tile"><div class="img t1"></div><b>Роса</b><small>1 990 ₽</small></div>
+          <div class="tile"><div class="img t2"></div><b>Лепесток</b><small>2 890 ₽</small></div>
+          <div class="tile"><div class="img t3"></div><b>Шёлк</b><small>1 450 ₽</small></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="w-foot"><span class="w-note"><b>01</b> · Главная, десктоп</span><span class="w-folio">04</span></footer>
 </body>
 </html>
