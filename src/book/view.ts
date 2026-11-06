@@ -10,7 +10,7 @@ import {
   PlaneGeometry,
   type Texture,
 } from 'three';
-import { bookOffsetX } from '../scene/camera.ts';
+import { bookOffsetX } from './offset.ts';
 import { shadowOpacity, sheetPoint, type BookModel, type Sheet } from './model.ts';
 
 const SEGMENTS = 24;
