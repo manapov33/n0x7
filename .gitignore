@@ -4,3 +4,5 @@ test-results/
 playwright-report/
 .superpowers/
 .DS_Store
+.env.local
+.env*.local
