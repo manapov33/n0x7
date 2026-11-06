@@ -1,4 +1,5 @@
 import type { BookModel } from '../book/model.ts';
+import { esc } from '../fallback/render.ts';
 import { isPhone } from '../controls/viewport.ts';
 import type { Site } from '../content/types.ts';
 
@@ -40,16 +41,16 @@ export function createUi(root: HTMLElement, site: Site): Ui {
   const phoneHref = 'tel:' + site.phone.replace(/[^\d+]/g, '');
   ui.innerHTML = `
     <header class="ui-brand">
-      <span class="ui-logo">${site.name}</span>
-      <span class="ui-tagline">${site.tagline}</span>
+      <span class="ui-logo">${esc(site.name)}</span>
+      <span class="ui-tagline">${esc(site.tagline)}</span>
     </header>
     <div class="ui-hint" id="ui-hint">листайте</div>
     <div id="counter" data-spread="0" aria-live="off"></div>
     <button type="button" class="ui-cta" aria-controls="contact-panel" aria-expanded="false">Обсудить проект</button>
     <section id="contact-panel" role="dialog" aria-labelledby="contact-title" tabindex="-1" hidden>
       <h2 id="contact-title">Связаться</h2>
-      <a class="ui-link" href="${site.telegramUrl}" target="_blank" rel="noopener">Написать в Telegram</a>
-      <a class="ui-link" href="${phoneHref}">${site.phone}</a>
+      <a class="ui-link" href="${esc(site.telegramUrl)}" target="_blank" rel="noopener">Написать в Telegram</a>
+      <a class="ui-link" href="${esc(phoneHref)}">${esc(site.phone)}</a>
       <button type="button" class="ui-close" aria-label="Закрыть">×</button>
     </section>`;
   root.append(ui);
