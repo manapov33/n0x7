@@ -28,5 +28,14 @@ describe('export-pages', () => {
     }
     expect(existsSync('pages/table-stub.html')).toBe(true);
     expect(existsSync('public/scene/table.webp')).toBe(true);
+    expect(existsSync('public/scene/table-2048.webp')).toBe(true);
   });
+
+  it('стол: из одного источника получаются 3840x2400 и 2048x1280', async () => {
+    await exportPages({ only: ['table-stub'], outDir: out });
+    const full = await sharp(join(out, 'table.webp')).metadata();
+    const phone = await sharp(join(out, 'table-2048.webp')).metadata();
+    expect([full.width, full.height]).toEqual([3840, 2400]);
+    expect([phone.width, phone.height]).toEqual([2048, 1280]);
+  }, 90_000);
 });

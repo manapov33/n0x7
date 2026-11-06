@@ -1,3 +1,4 @@
+@import url("_fonts.css");
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 1200px; height: 1600px; }
 body {

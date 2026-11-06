@@ -16,13 +16,16 @@ import { createBookView } from '../book/view.ts';
 import { site } from '../content/site.ts';
 import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
+import { isPhone } from '../controls/viewport.ts';
 import { fitCamera } from './camera.ts';
+import { tablePlaneSize } from './tableMap.ts';
 
 export const PAGE_W = 3;
 const PAGE_H = 4;
 const FOV = 35;
 const CAM_EPS = 5e-4; // ближе этого камера считается доехавшей
 const TABLE_URL = '/scene/table.webp';
+const TABLE_URL_PHONE = '/scene/table-2048.webp';
 
 export type App = {
   model: BookModel;
@@ -112,18 +115,21 @@ export function createApp(
   });
   scene.add(view.group);
 
-  const tableGeometry = new PlaneGeometry(30, 40);
+  // Плоскость неподвижна в мире и посчитана той же функцией, что и карта изображения стола (assets/prompts/table.md).
+  const tablePlane = tablePlaneSize(PAGE_W, PAGE_H, FOV);
+  const tableGeometry = new PlaneGeometry(tablePlane.w, tablePlane.h);
   const tableMaterial = new MeshStandardMaterial({ color: 0x14110e, roughness: 0.95 });
   const table = new Mesh(tableGeometry, tableMaterial);
   table.position.z = -0.01;
   scene.add(table);
   // Стол — декорация: если не загрузился, остаётся тёмная плоскость.
-  loadTexture(TABLE_URL)
+  loadTexture(isPhone(window.innerWidth) ? TABLE_URL_PHONE : TABLE_URL)
     .then((map) => {
       if (disposed) return;
       tableMaterial.map = map;
       tableMaterial.color.set(0xffffff);
       tableMaterial.needsUpdate = true;
+      dirty = true;
     })
     .catch(() => {});
 

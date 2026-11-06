@@ -3,10 +3,30 @@
 <head>
 <meta charset="utf-8">
 <title>table-stub</title>
-<link rel="stylesheet" href="_base.css">
+<link rel="stylesheet" href="_fonts.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 3840px; height: 2400px; overflow: hidden; }
+  body { position: relative; background: #14110e; color: #6b6154; font: 400 36px/1 'JetBrains Mono', monospace; }
+  /* Заглушка стола 3840x2400 (16:10). Рамки совпадают с картой в assets/prompts/table.md (tests/unit/table-map.test.ts). */
+  .m { position: absolute; border: 4px dashed; padding: 16px; }
+  .spread { border-color: #8a6a3d; color: #8a6a3d; }
+  .cover { border-color: #5d7a8a; color: #5d7a8a; border-style: solid; }
+  .f169 { border-color: #3d5a3d; color: #3d5a3d; }
+  .f1610 { border-color: #3d3d5a; color: #3d3d5a; }
+  .f219 { border-color: #5a3d3d; color: #5a3d3d; }
+  .prop { border-color: #a0804a; color: #a0804a; background: rgba(160, 128, 74, 0.08); }
+  .name { position: absolute; left: 80px; top: 60px; font: 500 96px/1 'Cormorant', serif; color: #3a332b; }
+</style>
 </head>
 <body>
-<div class="name">table-stub</div>
-<div class="tag">PLACEHOLDER</div>
+<div class="name">table-stub · PLACEHOLDER</div>
+<div class="m f219" data-rect="621,643,2598,1114" style="left:621px;top:643px;width:2598px;height:1114px">видно 21:9</div>
+<div class="m f169" data-rect="930,643,1980,1114" style="left:930px;top:643px;width:1980px;height:1114px">видно 16:9</div>
+<div class="m f1610" data-rect="1029,643,1782,1114" style="left:1029px;top:643px;width:1782px;height:1114px">видно 16:10</div>
+<div class="m prop" data-rect="820,1180,370,380" style="left:820px;top:1180px;width:370px;height:380px">чашка</div>
+<div class="m prop" data-rect="2680,780,280,720" style="left:2680px;top:780px;width:280px;height:720px">ручка</div>
+<div class="m spread" data-rect="1200,720,1440,960" style="left:1200px;top:720px;width:1440px;height:960px">под журналом</div>
+<div class="m cover" data-rect="1560,720,720,960" style="left:1560px;top:720px;width:720px;height:960px">под обложкой</div>
 </body>
 </html>

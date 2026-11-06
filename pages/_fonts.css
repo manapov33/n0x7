@@ -1,0 +1,9 @@
+/* Шрифты макетов берутся из @fontsource (с кириллицей), без сети: экспорт открывает макеты по file://. */
+@import '../node_modules/@fontsource/cormorant/400.css';
+@import '../node_modules/@fontsource/cormorant/500.css';
+@import '../node_modules/@fontsource/cormorant/600.css';
+@import '../node_modules/@fontsource/manrope/400.css';
+@import '../node_modules/@fontsource/manrope/500.css';
+@import '../node_modules/@fontsource/manrope/600.css';
+@import '../node_modules/@fontsource/jetbrains-mono/400.css';
+@import '../node_modules/@fontsource/jetbrains-mono/500.css';
