@@ -33,6 +33,9 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
 
   const canvas = document.createElement('canvas');
   canvas.id = 'scene';
+  canvas.setAttribute('role', 'img');
+  const label = (spread: number) => canvas.setAttribute('aria-label', site.spreads[spread]?.alt ?? site.name);
+  label(0);
   const loading = document.createElement('div');
   loading.id = 'loading';
   loading.innerHTML = '<span class="loading-logo">N0X7</span><span class="loading-bar"></span>';
@@ -65,7 +68,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     if (failed) return;
     let syncCamera = () => {};
     const created = createApp(canvas, fail, {
-      onSpread: () => {
+      onSpread: (spread) => {
+        label(spread);
         ui.update();
         syncCamera();
       },

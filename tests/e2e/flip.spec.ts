@@ -82,3 +82,14 @@ test('клик по левой половине на развороте 1 по-�
   await page.mouse.click(60, 400);
   await expect(spread(page)).toHaveAttribute('data-spread', '0');
 });
+
+test('canvas: role=img и aria-label из alt текущего разворота, обновляется при листании', async ({ page }) => {
+  const { site } = await import('../../src/content/site.ts');
+  const canvas = page.locator('canvas');
+  await expect(canvas).toHaveAttribute('role', 'img');
+  await expect(canvas).toHaveAttribute('aria-label', site.spreads[0]!.alt);
+  await page.keyboard.press('ArrowRight');
+  await expect(spread(page)).toHaveAttribute('data-spread', '1');
+  await expect(canvas).toHaveAttribute('aria-label', site.spreads[1]!.alt);
+  expect(site.spreads[1]!.alt).not.toBe(site.spreads[0]!.alt);
+});
