@@ -8,13 +8,13 @@ export function chooseMode(e: Env): 'book' | 'fallback' {
   return e.webgl && !e.reducedMotion ? 'book' : 'fallback';
 }
 
-function detectEnv(): Env {
+export function detectEnv(): Env {
   let webgl = false;
   try {
     const probe = document.createElement('canvas');
-    const gl = probe.getContext('webgl2') ?? probe.getContext('webgl');
+    const gl = probe.getContext('webgl2'); // three r187 работает только на WebGL2
     webgl = gl !== null;
-    (gl as WebGLRenderingContext | null)?.getExtension('WEBGL_lose_context')?.loseContext();
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
   } catch {
     webgl = false;
   }
