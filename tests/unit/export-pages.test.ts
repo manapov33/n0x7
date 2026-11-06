@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import { afterAll, describe, expect, it } from 'vitest';
 import { site } from '../../src/content/site.ts';
-import { exportPages } from '../../scripts/export-pages.ts';
+import { exportPages, writeTable } from '../../scripts/export-pages.ts';
 
 const out = mkdtempSync(join(tmpdir(), 'n0x7-pages-'));
 afterAll(() => rmSync(out, { recursive: true, force: true }));
@@ -38,4 +38,9 @@ describe('export-pages', () => {
     expect([full.width, full.height]).toEqual([3840, 2400]);
     expect([phone.width, phone.height]).toEqual([2048, 1280]);
   }, 90_000);
+
+  it('стол: источник не 16:10 отклоняется, а не обрезается молча', async () => {
+    const square = await sharp({ create: { width: 1000, height: 1000, channels: 3, background: '#111' } }).png().toBuffer();
+    await expect(writeTable(square, out, [])).rejects.toThrow(/16:10/);
+  });
 });

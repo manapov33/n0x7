@@ -12,6 +12,23 @@ const DESKTOP_ASPECTS = [0.75, 16 / 10, 16 / 9, 21 / 9];
 const PHONE_ASPECTS = [0.4, 0.46, 0.56];
 const SAFETY = 1.03;
 
+/** Цвет фона страницы и очистки рендерера: стол растворяется в него на краях. */
+export const TABLE_CLEAR_COLOR = 0x0b0a09;
+/** Растушёвка: от края до этой доли изображения (по x и по y). Кадр 21:9 начинается с 16% по x и 26,8% по y, его она не трогает. */
+const FADE_X = 0.14;
+const FADE_Y = 0.25;
+const smooth = (t: number) => {
+  const c = Math.min(1, Math.max(0, t));
+  return c * c * (3 - 2 * c);
+};
+
+/** Непрозрачность стола в точке изображения (u, v от 0 до 1): 0 на краю, 1 внутри. Сцена и промпт опираются на неё. */
+export function tableFadeAlpha(u: number, v: number): number {
+  const ax = smooth(Math.min(u, 1 - u) / FADE_X);
+  const ay = smooth(Math.min(v, 1 - v) / FADE_Y);
+  return ax * ay;
+}
+
 /** Сколько мировых единиц видно на плоскости стола при данной пропорции экрана. */
 export function visibleWorldSize(
   aspect: number,
@@ -49,6 +66,8 @@ export type TableMap = {
   cover: Rect;
   /** Видимая часть изображения на десктопе, когда журнал раскрыт. */
   frames: Record<'16:10' | '16:9' | '21:9', Rect>;
+  /** Что видно на телефоне (самый узкий экран 0.4): камера над левой или правой страницей. */
+  phone: { left: Rect; right: Rect };
   /** Места для предметов: рядом с журналом, видны на 16:9, рамка кадра может их обрезать. */
   props: { cup: Rect; pen: Rect };
 };
@@ -69,7 +88,9 @@ export function tableImageMap(pageW: number, pageH: number, fovDeg: number, imgW
     const v = visibleWorldSize(a, 'spread', pageW, pageH, fovDeg);
     return centred(v.w, v.h);
   };
-  // Предметы заданы как доли изображения (на 3840x2400: чашка 820..1190 x 1180..1560, ручка 2680..2960 x 780..1500).
+  const pv = visibleWorldSize(0.4, 'page', pageW, pageH, fovDeg);
+  const phoneAt = (cx: number) => toRect(cx - pv.w / 2, -pv.h / 2, pv.w, pv.h);
+  // Предметы заданы как доли изображения (на 3840x2400: чашка 838..1158 x 1232..1552, ручка 2720..2940 x 720..1440).
   const fx = (v: number) => Math.round(v * imgW);
   const fy = (v: number) => Math.round(v * imgH);
   return {
@@ -78,9 +99,10 @@ export function tableImageMap(pageW: number, pageH: number, fovDeg: number, imgW
     spread: centred(2 * pageW, pageH),
     cover: centred(pageW, pageH),
     frames: { '16:10': frame(ASPECTS['16:10']), '16:9': frame(ASPECTS['16:9']), '21:9': frame(ASPECTS['21:9']) },
+    phone: { left: phoneAt(-pageW / 2), right: phoneAt(pageW / 2) },
     props: {
-      cup: { x: fx(820 / 3840), y: fy(1180 / 2400), w: fx(370 / 3840), h: fy(380 / 2400) },
-      pen: { x: fx(2680 / 3840), y: fy(780 / 2400), w: fx(280 / 3840), h: fy(720 / 2400) },
+      cup: { x: fx(838 / 3840), y: fy(1232 / 2400), w: fx(320 / 3840), h: fy(320 / 2400) },
+      pen: { x: fx(2720 / 3840), y: fy(720 / 2400), w: fx(220 / 3840), h: fy(720 / 2400) },
     },
   };
 }

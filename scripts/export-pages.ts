@@ -71,7 +71,12 @@ async function findTableSource(): Promise<string | null> {
 }
 
 /** Из одного исходника стола делает настольную (3840) и телефонную (2048) версии. */
-async function writeTable(source: Buffer, dir: string, written: string[]): Promise<void> {
+export async function writeTable(source: Buffer, dir: string, written: string[]): Promise<void> {
+  const meta = await sharp(source).metadata();
+  const aspect = (meta.width ?? 0) / (meta.height ?? 1);
+  if (Math.abs(aspect - 1.6) > 0.01) {
+    throw new Error(`стол: исходник ${meta.width}x${meta.height} не 16:10 (нужно 3840x2400); иначе карта в assets/prompts/table.md сдвинется`);
+  }
   const full = await sharp(source).resize(TABLE_SIZE.width, TABLE_SIZE.height, { fit: 'cover' }).png().toBuffer();
   const phone = await sharp(full).resize(TABLE_PHONE_WIDTH).png().toBuffer();
   mkdirSync(dir, { recursive: true });

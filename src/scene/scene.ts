@@ -3,7 +3,9 @@ import {
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
+  DataTexture,
   PlaneGeometry,
+  RGBAFormat,
   Scene,
   SpotLight,
   SRGBColorSpace,
@@ -18,7 +20,7 @@ import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { isPhone } from '../controls/viewport.ts';
 import { fitCamera } from './camera.ts';
-import { tablePlaneSize } from './tableMap.ts';
+import { TABLE_CLEAR_COLOR, tableFadeAlpha, tablePlaneSize } from './tableMap.ts';
 
 export const PAGE_W = 3;
 const PAGE_H = 4;
@@ -54,6 +56,7 @@ export function createApp(
   let renderer: WebGLRenderer;
   try {
     renderer = new WebGLRenderer({ canvas, antialias: true });
+    renderer.setClearColor(TABLE_CLEAR_COLOR, 1);
   } catch {
     onFail('renderer');
     return { model, ready: Promise.resolve(), setCameraTarget() {}, setLamp() {}, spreadWidthPx: () => 0, dispose() {} };
@@ -118,7 +121,19 @@ export function createApp(
   // Плоскость неподвижна в мире и посчитана той же функцией, что и карта изображения стола (assets/prompts/table.md).
   const tablePlane = tablePlaneSize(PAGE_W, PAGE_H, FOV);
   const tableGeometry = new PlaneGeometry(tablePlane.w, tablePlane.h);
-  const tableMaterial = new MeshStandardMaterial({ color: 0x14110e, roughness: 0.95 });
+  // Края стола растворяются в цвет очистки: в узком высоком окне плоскость может кончиться, но границы не видно.
+  const FW = 256;
+  const FH = 160;
+  const fadeData = new Uint8Array(FW * FH * 4);
+  for (let y = 0; y < FH; y++) {
+    for (let x = 0; x < FW; x++) {
+      const a = Math.round(255 * tableFadeAlpha(x / (FW - 1), y / (FH - 1)));
+      fadeData.set([a, a, a, 255], (y * FW + x) * 4);
+    }
+  }
+  const fadeMap = new DataTexture(fadeData, FW, FH, RGBAFormat);
+  fadeMap.needsUpdate = true;
+  const tableMaterial = new MeshStandardMaterial({ color: 0x14110e, roughness: 0.95, alphaMap: fadeMap, transparent: true });
   const table = new Mesh(tableGeometry, tableMaterial);
   table.position.z = -0.01;
   scene.add(table);
@@ -217,6 +232,7 @@ export function createApp(
     view.dispose();
     tableGeometry.dispose();
     tableMaterial.dispose();
+    fadeMap.dispose();
     textures.forEach((t) => t.dispose());
     textures.clear();
     renderer.dispose();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fitCamera } from '../../src/scene/camera.ts';
-import { tableImageMap, tablePlaneSize, visibleWorldSize, type Rect } from '../../src/scene/tableMap.ts';
+import { TABLE_CLEAR_COLOR, tableFadeAlpha, tableImageMap, tablePlaneSize, visibleWorldSize, type Rect } from '../../src/scene/tableMap.ts';
 
 const G = { pageW: 3, pageH: 4, fov: 35 };
 const area = (r: Rect) => r.w * r.h;
@@ -93,5 +93,67 @@ describe('заглушка стола', () => {
     for (const r of rects) {
       expect(html).toContain(`data-rect="${r.x},${r.y},${r.w},${r.h}"`);
     }
+  });
+});
+
+describe('реквизит и зазоры (допуск генератора)', () => {
+  const m = tableImageMap(G.pageW, G.pageH, G.fov, 3840, 2400);
+  const cx = (r: Rect) => r.x + r.w / 2;
+  const cy = (r: Rect) => r.y + r.h / 2;
+  it('чашка: центр около 26% слева и 58% сверху; ручка: около 73% слева, 30–60% сверху', () => {
+    expect(cx(m.props.cup) / 3840).toBeCloseTo(0.26, 1);
+    expect(cy(m.props.cup) / 2400).toBeCloseTo(0.58, 1);
+    expect(cx(m.props.pen) / 3840).toBeCloseTo(0.73, 1);
+    expect(m.props.pen.y / 2400).toBeCloseTo(0.3, 2);
+    expect((m.props.pen.y + m.props.pen.h) / 2400).toBeCloseTo(0.6, 2);
+  });
+  it('зазор до журнала не меньше 40 px', () => {
+    expect(m.spread.x - (m.props.cup.x + m.props.cup.w)).toBeGreaterThanOrEqual(40);
+    expect(m.props.pen.x - (m.spread.x + m.spread.w)).toBeGreaterThanOrEqual(40);
+  });
+  it('пусто в x 31–69% и y 30–70%, нет реквизита в верхних и нижних 27%', () => {
+    const zone: Rect = { x: 0.31 * 3840, y: 0.3 * 2400, w: 0.38 * 3840, h: 0.4 * 2400 };
+    const bands: Rect[] = [
+      { x: 0, y: 0, w: 3840, h: 0.27 * 2400 },
+      { x: 0, y: 0.73 * 2400, w: 3840, h: 0.27 * 2400 },
+    ];
+    for (const r of [m.props.cup, m.props.pen]) {
+      expect(overlap(r, zone)).toBe(0);
+      for (const b of bands) expect(overlap(r, b)).toBe(0);
+    }
+  });
+  it('карта телефона: страница слева и справа, с центрами на ±pageW/2', () => {
+    expect(m.phone.left.x + m.phone.left.w / 2).toBeCloseTo(1920 - 1.5 * m.pxPerUnit, -0.4);
+    expect(m.phone.right.x + m.phone.right.w / 2).toBeCloseTo(1920 + 1.5 * m.pxPerUnit, -0.4);
+    expect(m.phone.left.y).toBeLessThan(m.frames['16:9'].y);
+  });
+});
+
+describe('растушёвка краёв стола', () => {
+  const m = tableImageMap(G.pageW, G.pageH, G.fov, 3840, 2400);
+  it('на краю прозрачность 0, в углу 0', () => {
+    expect(tableFadeAlpha(0, 0.5)).toBe(0);
+    expect(tableFadeAlpha(1, 0.5)).toBe(0);
+    expect(tableFadeAlpha(0.5, 0)).toBe(0);
+    expect(tableFadeAlpha(0.5, 1)).toBe(0);
+    expect(tableFadeAlpha(0, 0)).toBe(0);
+  });
+  it('внутри кадра 16:10–21:9 прозрачность 1 (растушёвка его не трогает)', () => {
+    const f = m.frames['21:9'];
+    for (const [u, v] of [[f.x, f.y], [f.x + f.w, f.y], [f.x, f.y + f.h], [f.x + f.w, f.y + f.h], [1920, 1200]]) {
+      expect(tableFadeAlpha(u! / 3840, v! / 2400)).toBe(1);
+    }
+  });
+  it('растёт монотонно от края к центру без скачков', () => {
+    let prev = 0;
+    for (let i = 0; i <= 100; i++) {
+      const a = tableFadeAlpha(0.5, i / 200);
+      expect(a).toBeGreaterThanOrEqual(prev);
+      expect(a - prev).toBeLessThan(0.1);
+      prev = a;
+    }
+  });
+  it('цвет очистки совпадает с фоном страницы', () => {
+    expect(TABLE_CLEAR_COLOR).toBe(0x0b0a09);
   });
 });

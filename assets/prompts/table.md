@@ -8,7 +8,7 @@
 
 ## Карта изображения (пиксели, 3840×2400, начало в левом верхнем углу)
 
-Карта посчитана функцией `tableImageMap` (`src/scene/tableMap.ts`), та же функция задаёт размер стола в сцене (16×10 единиц, 240 px на единицу). Заглушка стола нарисована по ней же.
+Карта посчитана функцией `tableImageMap` (`src/scene/tableMap.ts`), та же функция задаёт размер стола в сцене (16×10 единиц, 240 px на единицу). Заглушка стола нарисована по ней же. **На экране видна только средняя часть изображения**: полоса примерно y 643–1757 (27%–73% по высоте), по ширине от 16% до 84% на самом широком экране. Края картинки на десктопе не видны вообще.
 
 | Область | x | y | ширина | высота |
 |---|---|---|---|---|
@@ -17,46 +17,48 @@
 | Видно на 16:10 | 1029 | 643 | 1782 | 1114 |
 | Видно на 16:9 | 930 | 643 | 1980 | 1114 |
 | Видно на 21:9 | 621 | 643 | 2598 | 1114 |
-| Чашка (с блюдцем) | 820 | 1180 | 370 | 380 |
-| Ручка | 2680 | 780 | 280 | 720 |
+| Телефон, камера над левой страницей (самый узкий экран) | 1142 | 156 | 835 | 2088 |
+| Телефон, камера над правой страницей | 1862 | 156 | 835 | 2088 |
+| Чашка (с блюдцем) | 838 | 1232 | 320 | 320 |
+| Ручка | 2720 | 720 | 220 | 720 |
 
-На телефоне видна узкая вертикальная полоса вокруг центра (примерно x 1500–2340, y 360–2040), там только тёмный стол.
+Положение реквизита в процентах от всего изображения: центр чашки примерно 26% слева и 58% сверху; ручка примерно 73% слева, по высоте от 30% до 60%. Зазор от чашки до журнала 42 px, от ручки до журнала 80 px.
 
 ```
- 0                         3840 x
- +-----------------------------------------+ 0
- |         (темно, дальний край)           |
- |   +- видно 21:9 (621..3219) ---------+  | 643
- |   |  +- видно 16:9 (930..2910) ----+ |  |
- |   |  |       ┌─ ручка ─┐           | |  |
- |   |  | +--------------+ │ ╲        | |  | 720
- |   |  | |  ПОД ЖУРНАЛОМ| │  ╲       | |  |
- |   |  | |  1200..2640  | └───┘      | |  |
- |   |  | |   (пусто)    |            | |  |
- |   |  | | ( чашка )    |            | |  |
- |   |  | +--------------+            | |  | 1680
- |   |  +-----------------------------+ |  | 1757
- |   +----------------------------------+  |
- |                                         |
- +-----------------------------------------+ 2400 y
+ x: 0      16%     26%   31%          69%   73%      84%   100%
+ +---------------------------------------------------------+ 0
+ |  чёрный, растворяется в краях (верхние 27%, без вещей)  |
+ |         +-- видно 21:9 -------------------------+       | 27% (y 643)
+ |         |  +- видно 16:9 --------------------+  |       |
+ |         |  |      +------------+  ручка      |  |       | 30% (y 720)
+ |         |  |      | под журна- |  | (73%,    |  |       |
+ |         |  |      | лом: ПУСТО |  |  30-60%) |  |       |
+ |         |  | чашка|            |             |  |       |
+ |         |  | (26%,|            |             |  |       |
+ |         |  |  58%)+------------+             |  |       | 70% (y 1680)
+ |         |  +--------------------------------+  |       | 73% (y 1757)
+ |         +--------------------------------------+       |
+ |  чёрный, растворяется в краях (нижние 27%, без вещей)   |
+ +---------------------------------------------------------+ 100%
 ```
 
 Правила:
-- В прямоугольник «под раскрытым журналом» (1200,720 – 2640,1680) ничего не ставить: журнал его закроет. Только ровная тёмная поверхность.
-- Чашка слева-внизу, ручка справа-вверху. Они могут уходить за край кадра 16:9 (как в референсе), но не должны заходить под журнал.
-- Верх и низ за пределами видимой полосы (y меньше 640 и больше 1760) почти чёрные: их видно только на телефоне.
-- Лампа: пятно света в левом верхнем углу кадра (примерно x 900–1500, y 650–1000), к краям спадает в темноту. Само пятно света не должно быть яркой точкой, только мягкое тепло.
+- В прямоугольнике x 31–69%, y 30–70% (под журналом) ничего нет: ровная тёмная поверхность.
+- В верхних 27% и нижних 27% изображения нет ни одного предмета: там почти чёрная поверхность.
+- Внешние края изображения (около 14% слева и справа, около 25% сверху и снизу) плавно уходят в абсолютно чёрный `#0b0a09`: сцена сама растворяет край стола в этот цвет, и картинка должна быть непрерывна с ним.
+- Чашка и ручка стоят целиком на своих местах из таблицы, не у самого края картинки: края не видны. Чашка может быть чуть обрезана левой границей кадра 16:9 (x 930), это нормально.
+- Лампа: мягкое тёплое пятно в верхней левой части видимой полосы (примерно x 900–1500, y 650–1000), к краям спадает в темноту. Без яркой точки.
 
 ## Готовый промпт (English, для Midjourney, Flux, Nano Banana, Ideogram и других)
 
 ```
-Strictly top-down flat lay photograph, camera pointing straight down, no perspective, of a near-black matte dark wood desk surface with very fine grain. A soft pool of warm tungsten lamp light falls from the upper left and fades smoothly into deep darkness toward the edges and corners. The large central area is completely empty and evenly dark. A white ceramic coffee cup on a saucer sits at the lower left of the visible area, partly cut off by the left edge of the frame, and a single slim fountain pen lies diagonally at the upper right, near the right edge. Both objects are small relative to the frame and far from the centre. Moody, cinematic, premium editorial still life, subtle film grain, shallow soft highlights, high resolution, ultra detailed texture.
+Strictly top-down flat lay photograph, camera pointing straight down, no perspective, of a near-black matte dark wood desk surface with very fine grain, wide 16:10 frame. All objects sit in the middle band of the image, between 30% and 60% of the height. A white ceramic coffee cup on a saucer is placed with its centre at about 26% from the left edge and 58% from the top. A single slim black fountain pen lies almost vertically at about 73% from the left edge, spanning from about 30% to about 60% of the image height. The whole central region, from 31% to 69% of the width and from 30% to 70% of the height, is completely empty, even dark wood with nothing on it. The upper 27% and lower 27% of the image contain no objects at all, only dark wood. A soft pool of warm tungsten lamp light falls from the upper left of the middle band and fades smoothly into darkness; the outer edges and corners of the image fade to pure near-black (#0b0a09). Both objects are small relative to the frame. Moody, cinematic, premium editorial still life, subtle film grain, high resolution, ultra detailed texture.
 ```
 
 ## Negative prompt
 
 ```
-text, letters, logo, watermark, brand name, people, hands, magazine, book, paper, laptop, phone, plants, perspective angle, tilted camera, vignette frame, bright spotlight hotspot, overexposed, white background, clutter, extra objects, saturated colors
+text, letters, logo, watermark, brand name, people, hands, magazine, book, paper, laptop, phone, plants, perspective angle, tilted camera, bright spotlight hotspot, overexposed, white background, clutter, extra objects, saturated colors
 ```
 
 (Для генераторов без поля negative prompt добавить в конец основного: `--no text, logo, people, book, paper, clutter`.)
@@ -65,7 +67,7 @@ text, letters, logo, watermark, brand name, people, hands, magazine, book, paper
 
 - Соотношение сторон: 16:10 (если генератор не умеет, взять 16:9 с запасом по высоте и дорезать до 3840×2400, смотреть чтобы чашка и ручка попали в свои прямоугольники).
 - Разрешение: 3840×2400. Если генератор даёт меньше, апскейл до 3840×2400.
-- Имя файла: `assets/images/table.png`.
+- Имя файла: `assets/images/table.png`. Исходник обязан быть строго 16:10: `npm run pages` отклонит другой формат (иначе карта сдвинется).
 
 ## Как проверить результат
 
