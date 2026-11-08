@@ -93,6 +93,26 @@ test('клавиши: PageDown к следующей сцене, PageUp обра
   expect(p).toBeCloseTo(sceneStart(scenes, 1), 3); // ровно одна сцена, браузер не доложил прокрутку
 });
 
+test('клавиши: PageDown доходит до контактов и ссылки Telegram', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'клавиатура');
+  test.setTimeout(90_000); // 16 прыжков по ~1 с
+  // последний шаг должен быть прыжком фильма, а не нативной прокруткой браузера
+  await page.evaluate(() => {
+    (window as unknown as { __prevented: boolean[] }).__prevented = [];
+    window.addEventListener('keydown', (e) => (window as unknown as { __prevented: boolean[] }).__prevented.push(e.defaultPrevented));
+  });
+  for (let i = 0; i < scenes.length; i++) {
+    await page.keyboard.press('PageDown');
+    await settled(page);
+  }
+  const prevented = await page.evaluate(() => (window as unknown as { __prevented: boolean[] }).__prevented);
+  expect(prevented).toEqual(new Array(scenes.length).fill(true));
+  expect(await filmProgress(page)).toBeCloseTo(1, 3);
+  await expect(page.locator('.ov-contacts')).toBeVisible();
+  await expect(page.locator('.ov-services')).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Написать в Telegram' }).first()).toBeVisible();
+});
+
 test('клавиши не работают в панели контактов', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'клавиатура');
   await page.locator('.ui-cta').click();

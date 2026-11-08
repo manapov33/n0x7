@@ -125,7 +125,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   });
   root.dataset.settled = 'true';
   const detachKeys = attachKeys(document, {
-    starts: scenes.map((_, i) => sceneStart(scenes, i)),
+    starts: [...scenes.map((_, i) => sceneStart(scenes, i)), 1], // последняя остановка: самый конец фильма
     target: scroll.target,
     jumpTo: scroll.jumpTo,
   });
