@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { attachKeys, createScroll, smoothToward } from '../../src/film/scroll.ts';
 import { createRail } from '../../src/film/rail.ts';
 import { buildScenes } from '../../src/film/scenes.ts';
@@ -56,13 +56,50 @@ describe('createScroll', () => {
     expect(s.target()).toBeCloseTo(3000 / (9 * 844), 6);
   });
 
+  afterEach(() => vi.useRealTimers());
+
+  it('рост высоты во время прокрутки не вызывает scrollTo до покоя', () => {
+    vi.useFakeTimers();
+    const { win, spacer, s } = setup();
+    const spy = vi.spyOn(win, 'scrollTo');
+    win.scrollY = 3000;
+    win.dispatchEvent(new Event('scroll'));
+    win.innerHeight = 904;
+    win.dispatchEvent(new Event('resize'));
+    for (let i = 0; i < 5; i++) {
+      vi.advanceTimersByTime(100); // жест продолжается
+      win.scrollY += 40;
+      win.dispatchEvent(new Event('scroll'));
+    }
+    expect(spy).not.toHaveBeenCalled();
+    expect(spacer.style.height).toBe('8440px');
+    vi.advanceTimersByTime(300); // покой
+    expect(spacer.style.height).toBe('9040px');
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(s.target()).toBeGreaterThan(0);
+  });
+
+  it('scrollTo без поддержки behavior: запасной вызов', () => {
+    const { win, s } = setup();
+    const calls: unknown[][] = [];
+    win.scrollTo = ((...a: unknown[]) => {
+      calls.push(a);
+      if (typeof a[0] === 'object') throw new TypeError('behavior');
+      win.scrollY = a[1] as number;
+    }) as never;
+    s.jumpTo(0.5);
+    expect(calls[1]).toEqual([0, Math.ceil(0.5 * 9 * 844)]);
+  });
+
   it('окно стало выше: спейсер удлиняется, прогресс сохраняется', () => {
+    vi.useFakeTimers();
     const { win, spacer, s } = setup();
     win.scrollY = 3000;
     win.dispatchEvent(new Event('scroll'));
     const p = s.target();
     win.innerHeight = 904;
     win.dispatchEvent(new Event('resize'));
+    vi.advanceTimersByTime(300);
     expect(spacer.style.height).toBe('9040px');
     expect(s.target()).toBeCloseTo(p, 6);
     expect(Math.abs(win.scrollY / (9 * 904) - p)).toBeLessThan(0.001);
@@ -105,6 +142,7 @@ describe('attachKeys', () => {
     const off = attachKeys(document, { starts, target: s.target, jumpTo: s.jumpTo });
     return { s, off };
   };
+  afterEach(() => (document.body.innerHTML = ''));
   const press = (key: string, init: KeyboardEventInit = {}, el: Element | Document = document) => {
     const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
     (el instanceof Document ? el.body : el).dispatchEvent(e);
@@ -150,6 +188,19 @@ describe('attachKeys', () => {
     expect(press('ArrowDown', {}, input).defaultPrevented).toBe(false);
     expect(press(' ', {}, link).defaultPrevented).toBe(false);
     expect(s.target()).toBe(0);
+    off();
+  });
+
+  it('при открытой панели клавиши не листают фильм, даже с фокусом на body', () => {
+    const { s, off } = setup();
+    const panel = document.createElement('section');
+    panel.id = 'contact-panel';
+    document.body.append(panel);
+    expect(press('ArrowDown').defaultPrevented).toBe(false);
+    expect(s.target()).toBe(0);
+    panel.hidden = true;
+    expect(press('ArrowDown').defaultPrevented).toBe(true);
+    panel.remove();
     off();
   });
 

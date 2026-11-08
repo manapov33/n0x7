@@ -44,12 +44,34 @@ test('метки доступны с клавиатуры', async ({ page }) => 
   await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
 });
 
-test('рейка не перекрывает кнопку «Обсудить проект»', async ({ page }) => {
-  const cta = await page.locator('.ui-cta').boundingBox();
-  const rail = await page.locator('.film-rail').boundingBox();
-  expect(cta && rail).toBeTruthy();
-  const overlap = !(cta!.x + cta!.width <= rail!.x || rail!.x + rail!.width <= cta!.x || cta!.y + cta!.height <= rail!.y || rail!.y + rail!.height <= cta!.y);
-  expect(overlap).toBe(false);
+test('кнопки и подписи рейки не пересекают «Обсудить проект» в начале, в play и в contacts', async ({ page }) => {
+  const hit = async () => {
+    const cta = (await page.locator('.ui-cta').boundingBox())!;
+    const boxes = await page.evaluate(() =>
+      [...document.querySelectorAll('.film-rail-mark')].flatMap((b) => {
+        const r = (e: Element) => {
+          const { x, y, width, height } = e.getBoundingClientRect();
+          return { x, y, width, height };
+        };
+        const label = b.querySelector('.film-rail-label')!;
+        const out = [r(b)];
+        if (getComputedStyle(label).opacity !== '0') out.push(r(label));
+        return out;
+      }),
+    );
+    expect(boxes.length).toBeGreaterThanOrEqual(4);
+    for (const r of boxes) {
+      const apart = r.x + r.width <= cta.x || cta.x + cta.width <= r.x || r.y + r.height <= cta.y || cta.y + cta.height <= r.y;
+      expect(apart, JSON.stringify({ r, cta })).toBe(true);
+    }
+  };
+  await hit();
+  await page.getByRole('button', { name: 'Лилея' }).click();
+  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+  await hit();
+  await page.getByRole('button', { name: 'Контакты' }).click();
+  await expect(html(page)).toHaveAttribute('data-scene', 'contacts', { timeout: 3000 });
+  await hit();
 });
 
 test('клавиши: PageDown к следующей сцене, PageUp обратно, Space без двойной прокрутки', async ({ page }) => {
