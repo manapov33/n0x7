@@ -16,6 +16,7 @@ import {
 import { buildSheets } from '../book/sheets.ts';
 import { createBookView } from '../book/view.ts';
 import { site } from '../content/site.ts';
+import { createScreen } from './screen.ts';
 import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { isPhone } from '../controls/viewport.ts';
@@ -32,6 +33,8 @@ export type App = {
   ready: Promise<void>;
   /** Поставить сцену по состоянию фильма; рисует только если оно изменилось. */
   applyFilm(state: FilmState): void;
+  /** Начать загрузку кадров работы k (k-я работа с kind 'work'). */
+  preloadWork(k: number): void;
   setLamp(nx: number, ny: number): void;
   dispose(): void;
 };
@@ -52,7 +55,7 @@ export function createApp(
     renderer.setClearColor(TABLE_CLEAR_COLOR, 1);
   } catch {
     onFail('renderer');
-    return { ready: Promise.resolve(), applyFilm() {}, setLamp() {}, dispose() {} };
+    return { ready: Promise.resolve(), applyFilm() {}, preloadWork() {}, setLamp() {}, dispose() {} };
   }
 
   let disposed = false;
@@ -112,6 +115,20 @@ export function createApp(
     getTexture: store.get,
   });
   scene.add(view.group);
+
+  // Экран ролика: плоскость 6×4 точно над открытым разворотом, перед листами. Закрывает зазор у корешка
+  // и боковые полосы согнутых листов, пока экран виден.
+  const workSpreads = spreads.filter((s) => s.kind === 'work');
+  const phoneFrames = isPhone(window.innerWidth);
+  const screen = createScreen({
+    scene,
+    width: 2 * PAGE_W,
+    height: PAGE_H,
+    phone: phoneFrames,
+    loadTimeoutMs,
+    anisotropy: Math.min(8, renderer.capabilities.getMaxAnisotropy()),
+    requestRender: () => (dirty = true),
+  });
 
   // Плоскость неподвижна в мире и посчитана той же функцией, что и карта изображения стола (assets/prompts/table.md).
   const tablePlane = tablePlaneSize(PAGE_W, PAGE_H, FOV);
@@ -199,6 +216,7 @@ export function createApp(
     window.removeEventListener('resize', resize);
     canvas.removeEventListener('webglcontextlost', onLost);
     view.dispose();
+    screen.dispose();
     tableGeometry.dispose();
     tableMaterial.dispose();
     fadeMap.dispose();
@@ -214,6 +232,7 @@ export function createApp(
       if (disposed) return;
       const prev = film;
       film = state;
+      screen.show(state.work, state.work ? workSpreads[state.work.index]?.video : undefined);
       const same =
         prev !== undefined &&
         prev.camera.x === state.camera.x &&
@@ -233,6 +252,10 @@ export function createApp(
           void settleReady();
         }
       }
+    },
+    preloadWork(k) {
+      const video = workSpreads[k]?.video;
+      if (!disposed && video) screen.preload(k, video);
     },
     setLamp(nx, ny) {
       lamp.position.set(-1.5 + nx * 3, 1.5 + ny * 3, 9.5);

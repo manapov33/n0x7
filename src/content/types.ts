@@ -7,6 +7,8 @@ export type Spread = {
   left?: string;
   right: string;
   alt: string;
+  /** Кадры ролика работы: public/<dir>/d-000.webp (count) и p-000.webp (phoneCount). */
+  video?: { dir: string; count: number; phoneCount: number };
 };
 
 export type Service = { name: string; priceFrom: string };

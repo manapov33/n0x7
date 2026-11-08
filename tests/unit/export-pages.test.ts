@@ -23,7 +23,9 @@ describe('export-pages', () => {
     expect(paths.length).toBeGreaterThan(0);
     for (const p of paths) {
       const name = p.replace(/^\/pages\//, '').replace(/\.webp$/, '');
-      expect(existsSync(`pages/${name}.html`), `pages/${name}.html`).toBe(true);
+      // Страницы работ с роликом приходят из первого кадра (npm run frames), без HTML-макета.
+      const fromVideo = site.spreads.some((s) => s.video && (s.left === p || s.right === p));
+      if (!fromVideo) expect(existsSync(`pages/${name}.html`), `pages/${name}.html`).toBe(true);
       expect(existsSync(`public/pages/${name}.webp`), `public/pages/${name}.webp`).toBe(true);
     }
     expect(existsSync('pages/table-stub.html')).toBe(true);

@@ -37,6 +37,7 @@ export const site: Site = {
       left: '/pages/beauty-left.webp',
       right: '/pages/beauty-right.webp',
       alt: 'Концепт интернет-магазина косметики «Лилея»',
+      video: { dir: '/frames/beauty', count: 90, phoneCount: 60 },
     },
     {
       id: 'residence',

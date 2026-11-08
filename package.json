@@ -10,6 +10,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "pages": "tsx scripts/export-pages.ts",
+    "frames": "tsx scripts/export-frames.ts",
     "check:release": "tsx scripts/check-release.ts"
   },
   "devDependencies": {

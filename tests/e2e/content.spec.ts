@@ -6,7 +6,9 @@ import { site } from '../../src/content/site.ts';
  * Работы, у которых макет разворота уже свёрстан. Задача 9 добавит сюда coffee и residence;
  * пока работа здесь не значится, её заглушка с PLACEHOLDER допустима.
  */
-const READY_WORKS = ['beauty'];
+const READY_WORKS: string[] = [];
+/** Работы с роликом: страницы — первый кадр (npm run frames), HTML-макета нет. */
+const VIDEO_WORKS = site.spreads.filter((s) => s.video).map((s) => s.id);
 
 const pageName = (p: string) => p.replace(/^\/pages\//, '').replace(/\.webp$/, '');
 
@@ -45,6 +47,19 @@ test.describe('содержимое разворотов', () => {
         const html = readFileSync(`pages/${pageName(p!)}.html`, 'utf8');
         expect(html, `pages/${pageName(p!)}.html`).not.toContain('PLACEHOLDER');
       }
+    }
+  });
+
+  test('у работ с роликом страницы из первого кадра, а не из HTML-макета', () => {
+    expect(VIDEO_WORKS).toContain('beauty');
+    for (const id of VIDEO_WORKS) {
+      const s = site.spreads.find((x) => x.id === id)!;
+      for (const p of [s.left, s.right]) {
+        expect(p, `${id}: путь страницы`).toBe(`/pages/${id}-${p === s.left ? 'left' : 'right'}.webp`);
+        expect(existsSync(`public${p}`), `public${p}`).toBe(true);
+        expect(existsSync(`pages/${pageName(p!)}.html`), `pages/${pageName(p!)}.html не должен существовать`).toBe(false);
+      }
+      expect(existsSync(`public${s.video!.dir}/d-000.webp`)).toBe(true);
     }
   });
 

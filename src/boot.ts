@@ -1,5 +1,6 @@
 import { site } from './content/site.ts';
 import { buildScenes } from './film/scenes.ts';
+import { shouldPreload } from './film/frames.ts';
 import { createRail } from './film/rail.ts';
 import { attachKeys, createScroll } from './film/scroll.ts';
 import { computeFilm, sceneStart, totalScreens, type FilmState } from './film/timeline.ts';
@@ -54,9 +55,14 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   document.body.append(canvas, loading, spacer);
   const ui = createUi(document.body, site);
 
-  let app: { applyFilm(state: FilmState): void; dispose(): void } | undefined;
+  let app: { applyFilm(state: FilmState): void; preloadWork(k: number): void; dispose(): void } | undefined;
   let detachLamp: (() => void) | undefined;
   let failed = false;
+
+  // Кадры работы грузятся, когда до её dive меньше экрана прокрутки.
+  const diveStarts = scenes
+    .map((s, i) => (s.id === 'dive' ? sceneStart(scenes, i) : -1))
+    .filter((p) => p >= 0);
 
   // Прогресс фильма сглаживается (createScroll); нативная прокрутка остаётся нативной.
   let progress = 0;
@@ -69,6 +75,9 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     root.dataset.scene = state.scene;
     label(state);
     app?.applyFilm(state);
+    diveStarts.forEach((start, k) => {
+      if (shouldPreload(progress, start, screens)) app?.preloadWork(k);
+    });
   };
 
   const works = site.spreads.filter((s) => s.kind === 'work');
