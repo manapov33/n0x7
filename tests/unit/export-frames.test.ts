@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { afterAll, describe, expect, it } from 'vitest';
+import { PHONE_CROP_ASPECT } from '../../src/scene/dims.ts';
 import { site } from '../../src/content/site.ts';
 import { exportFrames, findFfmpeg } from '../../scripts/export-frames.ts';
 
@@ -11,7 +12,7 @@ const tmp = mkdtempSync(join(tmpdir(), 'n0x7-frames-'));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe('export-frames', () => {
-  it('короткий ролик → 90 кадров ≤1600, 60 кадров ≤960, страницы 1200x1600 ≤250 КБ', async () => {
+  it('короткий ролик → 90 кадров ≤1600, 60 кадров центральной вырезки телефона без увеличения, страницы 1200x1600 ≤250 КБ', async () => {
     const src = join(tmp, 'test.mp4');
     execFileSync(findFfmpeg(), ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc=size=1280x720:rate=24:duration=2', '-pix_fmt', 'yuv420p', src]);
     const framesDir = join(tmp, 'frames');
@@ -27,8 +28,19 @@ describe('export-frames', () => {
     const d = await sharp(join(dir, 'd-000.webp')).metadata();
     const p = await sharp(join(dir, 'p-000.webp')).metadata();
     expect(d.width!).toBeLessThanOrEqual(1600);
-    expect(p.width!).toBeLessThanOrEqual(960);
+    // телефон: центральная вырезка 5:8 в масштабе исходника (720 px по высоте), без увеличения
+    expect(p.height!).toBe(720);
+    expect(p.width!).toBe(450);
+    expect(p.width! / p.height!).toBeCloseTo(PHONE_CROP_ASPECT, 3);
     expect(d.width! / d.height!).toBeCloseTo(1.5, 2);
+    // вырезка телефона лежит ровно по центру десктопного кадра (тот же масштаб, без сдвига)
+    const left = Math.round((d.width! - p.width!) / 2);
+    const a = await sharp(join(dir, 'd-000.webp')).extract({ left, top: 0, width: p.width!, height: p.height! }).removeAlpha().raw().toBuffer();
+    const b = await sharp(join(dir, 'p-000.webp')).removeAlpha().raw().toBuffer();
+    expect(b.length).toBe(a.length);
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff += Math.abs(a[i]! - b[i]!);
+    expect(diff / a.length).toBeLessThan(6);
     for (const side of ['left', 'right']) {
       const file = join(pagesDir, `test-${side}.webp`);
       const m = await sharp(file).metadata();

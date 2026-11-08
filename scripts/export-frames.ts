@@ -4,10 +4,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
+import { PHONE_CROP_ASPECT } from '../src/scene/dims.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DESKTOP = { prefix: 'd', count: 90, maxWidth: 1600, quality: 88 };
-const PHONE = { prefix: 'p', count: 60, maxWidth: 960, quality: 84 };
+const DESKTOP = { prefix: 'd', count: 90, maxWidth: 1600, quality: 88, crop: false as const };
+// Телефон: центральная вырезка разворота (PHONE_CROP_ASPECT) в масштабе исходника, без увеличения.
+const PHONE = { prefix: 'p', count: 60, quality: 84, crop: true as const };
 const PAGE = { width: 1200, height: 1600, maxBytes: 250 * 1024 };
 
 export function findFfmpeg(): string {
@@ -27,10 +29,14 @@ function probeDuration(ffmpeg: string, source: string): number {
 const pad = (i: number) => String(i).padStart(3, '0');
 
 /** Вынимает ровно count кадров, равномерно от первого до последнего, обрезанных по центру до 3:2, в PNG. */
-function extractPng(ffmpeg: string, source: string, duration: number, count: number, width: number, dir: string): string[] {
+function extractPng(ffmpeg: string, source: string, duration: number, count: number, set: typeof DESKTOP | typeof PHONE, dir: string): string[] {
   mkdirSync(dir, { recursive: true });
   const fps = (count - 1) / duration;
-  const vf = `crop='min(iw,ih*3/2)':'min(ih,iw*2/3)',scale='min(${width},iw)':-2:flags=lanczos,fps=${fps}`;
+  const region = `crop='min(iw,ih*3/2)':'min(ih,iw*2/3)'`; // центральные 3:2, как у страниц
+  const vf = set.crop
+    ? // из 3:2 берём середину шириной PHONE_CROP_ASPECT·высота; масштаб только вниз (не больше 1280 по высоте)
+      `${region},crop='ih*${PHONE_CROP_ASPECT}':ih,scale=-2:'min(1280,ih)':flags=lanczos,fps=${fps}`
+    : `${region},scale='min(${set.maxWidth},iw)':-2:flags=lanczos,fps=${fps}`;
   execFileSync(ffmpeg, ['-v', 'error', '-y', '-i', source, '-vf', vf, '-frames:v', String(count), join(dir, 'f-%03d.png')]);
   const files = readdirSync(dir).filter((f) => f.endsWith('.png')).sort();
   if (files.length === 0) throw new Error('ffmpeg не вернул кадров');
@@ -60,7 +66,7 @@ export async function exportFrames(o: { source: string; id: string; framesDir: s
     mkdirSync(out, { recursive: true });
     let first: string | undefined;
     for (const set of [DESKTOP, PHONE]) {
-      const pngs = extractPng(ffmpeg, o.source, duration, set.count, set.maxWidth, join(tmp, set.prefix));
+      const pngs = extractPng(ffmpeg, o.source, duration, set.count, set, join(tmp, set.prefix));
       if (set === DESKTOP) first = pngs[0];
       for (let i = 0; i < pngs.length; i++) {
         const file = join(out, `${set.prefix}-${pad(i)}.webp`);

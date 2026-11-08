@@ -21,7 +21,7 @@ import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { isPhone } from '../controls/viewport.ts';
 import type { FilmState } from '../film/timeline.ts';
-import { FOV, PAGE_H, PAGE_W } from './dims.ts';
+import { FOV, PAGE_H, PAGE_W, phoneCropWidth } from './dims.ts';
 import { TABLE_CLEAR_COLOR, tableFadeAlpha, tablePlaneSize } from './tableMap.ts';
 
 export { PAGE_W };
@@ -122,7 +122,8 @@ export function createApp(
   const phoneFrames = isPhone(window.innerWidth);
   const screen = createScreen({
     scene,
-    width: 2 * PAGE_W,
+    // На телефоне кадры — центральная вырезка разворота (phoneCropWidth × PAGE_H), плоскость в том же масштабе.
+    width: phoneFrames ? phoneCropWidth() : 2 * PAGE_W,
     height: PAGE_H,
     phone: phoneFrames,
     loadTimeoutMs,

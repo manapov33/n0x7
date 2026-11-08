@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScenes, SCREENS } from '../../src/film/scenes.ts';
 import { fitCamera } from '../../src/scene/camera.ts';
-import { FOV, PAGE_H, PAGE_W } from '../../src/scene/dims.ts';
+import { FOV, PAGE_H, PAGE_W, PHONE_CROP_ASPECT, phoneCropWidth } from '../../src/scene/dims.ts';
 import { computeFilm, sceneProgress, sceneStart, totalScreens } from '../../src/film/timeline.ts';
 
 const scenes = buildScenes(3);
@@ -115,5 +115,18 @@ describe('film timeline', () => {
     expect(k(0.1)).toBeLessThan(0.9);
     expect(k(0.25)).toBeCloseTo(1, 6);
     expect(k(0.6)).toBe(1);
+  });
+  it('phone crop covers what a portrait phone shows in play, with margin, and is centred', () => {
+    const tan = Math.tan((FOV * Math.PI) / 360);
+    const p = (sceneStart(scenes, 3) + sceneStart(scenes, 4)) / 2;
+    expect(phoneCropWidth()).toBeCloseTo(PAGE_H * PHONE_CROP_ASPECT, 9);
+    for (const aspect of [360 / 800, 390 / 844, 412 / 915]) {
+      const h = computeFilm(p, { ...input, aspect }).camera.h;
+      const visW = 2 * h * tan * aspect;
+      expect(visW, `aspect ${aspect}`).toBeLessThanOrEqual(phoneCropWidth() + 1e-9);
+      expect(phoneCropWidth() / visW, `margin ${aspect}`).toBeGreaterThan(1.1);
+    }
+    // кадр не обрезан по высоте: телефон показывает страницу целиком по вертикали
+    expect(phoneCropWidth()).toBeLessThan(2 * PAGE_W);
   });
 });
