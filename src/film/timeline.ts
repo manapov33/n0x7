@@ -1,4 +1,5 @@
 import { fitCamera } from '../scene/camera.ts';
+import { FOV, PAGE_H, PAGE_W } from '../scene/dims.ts';
 import type { SceneId, SceneSpec } from './scenes.ts';
 
 export type Camera = { x: number; y: number; h: number };
@@ -14,9 +15,6 @@ export type FilmState = {
 };
 export type FilmInput = { scenes: SceneSpec[]; spreadCount: number; aspect: number };
 
-const PAGE_W = 3;
-const PAGE_H = 4;
-const FOV = 35;
 const TABLE_FACTOR = 2.2;
 const EPS = 1e-9;
 
@@ -88,6 +86,8 @@ export function computeFilm(progress: number, input: FilmInput): FilmState {
   // work video
   let work: FilmState['work'] = null;
   if (cur.work !== undefined) {
+    // screen ramps over the whole dive because the video plane sits exactly over
+    // the spread (Task 4 draws it on the page plane), not as a viewport layer.
     if (cur.id === 'dive') work = { index: cur.work, frame: 0, screen: s };
     else if (cur.id === 'play') work = { index: cur.work, frame: t, screen: 1 };
     else if (cur.id === 'surface') work = { index: cur.work, frame: 1, screen: 1 - s };
@@ -101,7 +101,11 @@ export function computeFilm(progress: number, input: FilmInput): FilmState {
   else if (cur.id === 'play') overlay[`work-${cur.work}`] = smooth(t * 2);
   else if (cur.id === 'surface') overlay[`work-${cur.work}`] = 1 - s;
   else if (cur.id === 'services') overlay.services = smooth(t * 4);
-  else if (cur.id === 'contacts') overlay.contacts = smooth(t * 4);
+  else if (cur.id === 'contacts') {
+    // crossfade: services out, contacts in
+    overlay.services = 1 - smooth(t * 4);
+    overlay.contacts = smooth(t * 4);
+  }
 
   return {
     scene: cur.id,

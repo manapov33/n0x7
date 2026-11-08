@@ -20,11 +20,10 @@ import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { isPhone } from '../controls/viewport.ts';
 import { fitCamera } from './camera.ts';
+import { FOV, PAGE_H, PAGE_W } from './dims.ts';
 import { TABLE_CLEAR_COLOR, tableFadeAlpha, tablePlaneSize } from './tableMap.ts';
 
-export const PAGE_W = 3;
-const PAGE_H = 4;
-const FOV = 35;
+export { PAGE_W };
 const CAM_EPS = 5e-4; // ближе этого камера считается доехавшей
 const TABLE_URL = '/scene/table.webp';
 const TABLE_URL_PHONE = '/scene/table-2048.webp';
