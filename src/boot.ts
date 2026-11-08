@@ -91,7 +91,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     label: w.title,
     progress: sceneStart(scenes, scenes.findIndex((s) => s.id === 'play' && s.work === k)),
   }));
-  marks.push({ label: 'Контакты', progress: sceneStart(scenes, scenes.findIndex((s) => s.id === 'contacts')) });
+  // Метка «Контакты» ведёт в самый конец: там полностью готовая сцена (в начале contacts ещё видны услуги).
+  marks.push({ label: 'Контакты', progress: 1 });
   const rail = createRail(document.body, marks, (p) => scroll.jumpTo(p));
 
   // Кадры идут, пока прогресс не сошёлся с целью; в покое цикл спит.

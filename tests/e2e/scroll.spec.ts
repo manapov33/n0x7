@@ -28,7 +28,12 @@ test('клик по метке «Лилея» ведёт к сцене play', as
 
 test('метка «Контакты» ведёт к сцене contacts', async ({ page }) => {
   await page.getByRole('button', { name: 'Контакты' }).click();
-  await expect(html(page)).toHaveAttribute('data-scene', 'contacts', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'contacts');
+  // метка приводит к готовым контактам, а не к кроссфейду с услугами
+  await expect(page.locator('.ov-contacts')).toBeVisible();
+  await expect(page.locator('.ov-services')).toBeHidden();
+  await expect(page.getByRole('link', { name: 'Написать в Telegram' }).first()).toBeVisible();
 });
 
 test('метки: три работы и контакты, в порядке фильма', async ({ page }) => {
