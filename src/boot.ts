@@ -161,6 +161,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     canvas.remove();
     loading.remove();
     spacer.remove();
+    window.scrollTo(0, 0); // запасная страница коротка: прокрутка фильма оставила бы её посередине
   };
 
   try {

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { chooseMode, detectEnv } from '../../src/boot.ts';
+import { boot, chooseMode, detectEnv } from '../../src/boot.ts';
 
 describe('chooseMode', () => {
   it('без WebGL — запасная страница', () => {
@@ -32,5 +32,25 @@ describe('detectEnv', () => {
   it('webgl2 есть — WebGL есть', () => {
     stub('webgl2');
     expect(detectEnv().webgl).toBe(true);
+  });
+});
+
+describe('boot: сбой загрузки', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    document.body.innerHTML = '';
+    document.documentElement.removeAttribute('data-mode');
+  });
+  it('запасная страница после сбоя начинается с верха', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener() {} }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation((() => ({ getExtension: () => null })) as never);
+    const scrollTo = vi.fn();
+    vi.stubGlobal('scrollTo', scrollTo);
+    window.scrollTo = scrollTo as never;
+    await boot({ importTimeoutMs: 0 });
+    expect(document.documentElement.getAttribute('data-mode')).toBeNull(); // fail() сработал
+    expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
   });
 });
