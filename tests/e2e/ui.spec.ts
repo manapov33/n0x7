@@ -5,7 +5,7 @@ const button = (page: import('@playwright/test').Page) => page.getByRole('button
 test('обложка: подпись и кнопка, счётчика и подсказки нет', async ({ page }) => {
   await page.goto('/');
   await expect(button(page)).toBeVisible();
-  await expect(page.locator('#ui-root').getByText('сайты и приложения на заказ')).toBeVisible();
+  await expect(page.locator('[data-ov="hero"]').getByText('сайты и приложения на заказ')).toBeVisible();
   await expect(page.getByText('листайте')).toHaveCount(0);
   await expect(page.locator('#counter')).toHaveCount(0);
   await expect(page.locator('#loading')).toHaveCount(0);

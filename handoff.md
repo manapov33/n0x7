@@ -47,3 +47,6 @@
 
 ## v2, ветка `feat/film` (задачи 1–3 из 5 готовы)
 Сцена и журнал ведутся таймлайном прокрутки (`src/film/*`, `#film-spacer`, `html[data-scene]`). Задача 3: `src/film/scroll.ts` (сглаживание прогресса, клавиши, защёлка высоты экрана против адресной строки), `rail.ts`/`rail.css` (боковая рейка с метками работ и «Контакты»). `html[data-settled]` = сглаживание сошлось (используют e2e). Дальше: задача 4 (кадры видео), 5 (оверлеи). Скриншоты: `.superpowers/sdd/2026-11-08-n0x7-film/shots/t3/`. Не проверено на настоящем телефоне.
+
+## v2 задача 5 (ветка `feat/film`): надписи
+`src/film/overlay.ts` + `overlay.css` — HTML-надписи hero / work-k / services / contacts от `FilmState.overlay`; скрытые: `aria-hidden`, `inert`, `visibility:hidden`. Подпись у логотипа скрыта, пока виден герой (`html[data-hero]`). `ui.setCtaJump` — кнопка «Обсудить проект» в сцене контактов ведёт на `jumpTo(1)`. Тест `tests/e2e/overlay.spec.ts`. Скриншоты: `.superpowers/sdd/2026-11-05-n0x7-site/shots/film/`. Нестабильные до задачи: `idle.spec` («приход текстуры», «прокрутка перерисовывает»), `scroll.spec` клик по метке «Лилея»/«Контакты». Дальше: финальная проверка v2, настоящий телефон.

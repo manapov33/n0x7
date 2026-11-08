@@ -2,6 +2,8 @@ import { esc } from '../fallback/render.ts';
 import type { Site } from '../content/types.ts';
 
 export type Ui = {
+  /** Пока задана, кнопка «Обсудить проект» вызывает её вместо панели (сцена контактов). null возвращает панель. */
+  setCtaJump(fn: (() => void) | null): void;
   /** Убрать интерфейс и снять слушатели. */
   destroy(): void;
 };
@@ -58,7 +60,12 @@ export function createUi(root: HTMLElement, site: Site): Ui {
     if (hadFocus) cta.focus();
   };
 
-  cta.addEventListener('click', () => (panel.hidden ? open() : closePanel()));
+  let ctaJump: (() => void) | null = null;
+  cta.addEventListener('click', () => {
+    if (ctaJump) ctaJump();
+    else if (panel.hidden) open();
+    else closePanel();
+  });
   close.addEventListener('click', closePanel);
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape') closePanel();
@@ -73,6 +80,16 @@ export function createUi(root: HTMLElement, site: Site): Ui {
   document.addEventListener('pointerdown', onDown);
 
   return {
+    setCtaJump(fn) {
+      if (fn === ctaJump) return;
+      ctaJump = fn;
+      if (fn && !panel.hidden) {
+        panel.hidden = true; // панель не нужна там, где контакты уже на экране
+        cta.setAttribute('aria-expanded', 'false');
+      }
+      if (fn) cta.removeAttribute('aria-controls');
+      else cta.setAttribute('aria-controls', 'contact-panel');
+    },
     destroy() {
       document.removeEventListener('keydown', onKey);
       document.removeEventListener('pointerdown', onDown);

@@ -1,6 +1,7 @@
 import { site } from './content/site.ts';
 import { buildScenes } from './film/scenes.ts';
 import { shouldPreload } from './film/frames.ts';
+import { createOverlay } from './film/overlay.ts';
 import { createRail } from './film/rail.ts';
 import { attachKeys, createScroll } from './film/scroll.ts';
 import { computeFilm, sceneStart, totalScreens, type FilmState } from './film/timeline.ts';
@@ -54,6 +55,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   spacer.id = 'film-spacer';
   document.body.append(canvas, loading, spacer);
   const ui = createUi(document.body, site);
+  const overlay = createOverlay(document.body, site);
 
   let app: { applyFilm(state: FilmState): void; preloadWork(k: number): void; dispose(): void } | undefined;
   let detachLamp: (() => void) | undefined;
@@ -63,6 +65,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   const diveStarts = scenes
     .map((s, i) => (s.id === 'dive' ? sceneStart(scenes, i) : -1))
     .filter((p) => p >= 0);
+
+  const toContacts = () => scroll.jumpTo(1);
 
   // Прогресс фильма сглаживается (createScroll); нативная прокрутка остаётся нативной.
   let progress = 0;
@@ -74,6 +78,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     });
     root.dataset.scene = state.scene;
     label(state);
+    overlay.update(state.overlay);
+    ui.setCtaJump((state.overlay.contacts ?? 0) > 0.5 ? toContacts : null);
     app?.applyFilm(state);
     diveStarts.forEach((start, k) => {
       if (shouldPreload(progress, start, screens)) app?.preloadWork(k);
@@ -142,6 +148,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     detachLamp?.();
     app?.dispose();
     ui.destroy();
+    overlay.destroy();
     canvas.remove();
     loading.remove();
     spacer.remove();
