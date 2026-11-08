@@ -1,6 +1,6 @@
 import { site } from './content/site.ts';
 import { buildScenes } from './film/scenes.ts';
-import { shouldPreload } from './film/frames.ts';
+import { worksToPreload, type WorkZone } from './film/frames.ts';
 import { createOverlay } from './film/overlay.ts';
 import { createRail } from './film/rail.ts';
 import { attachKeys, createScroll } from './film/scroll.ts';
@@ -61,10 +61,13 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   let detachLamp: (() => void) | undefined;
   let failed = false;
 
-  // Кадры работы грузятся, когда до её dive меньше экрана прокрутки.
-  const diveStarts = scenes
-    .map((s, i) => (s.id === 'dive' ? sceneStart(scenes, i) : -1))
-    .filter((p) => p >= 0);
+  // Кадры работы грузятся, пока прогресс в её окне (от экрана до dive до экрана после turn);
+  // во время прыжка рейки/клавиш — только у точки назначения.
+  const zones: WorkZone[] = scenes.flatMap((s, i) =>
+    s.id === 'dive' ? [{ start: sceneStart(scenes, i), end: sceneStart(scenes, i + 4) }] : [],
+  );
+  let jumping = () => false;
+  let jumpTarget = () => 0;
 
   const toContacts = () => scroll.jumpTo(1);
 
@@ -81,9 +84,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     overlay.update(state.overlay);
     ui.setCtaJump((state.overlay.contacts ?? 0) > 0.5 ? toContacts : null);
     app?.applyFilm(state);
-    diveStarts.forEach((start, k) => {
-      if (shouldPreload(progress, start, screens)) app?.preloadWork(k);
-    });
+    for (const k of worksToPreload(progress, zones, screens, jumping() ? jumpTarget() : null)) app?.preloadWork(k);
   };
 
   const works = site.spreads.filter((s) => s.kind === 'work');
@@ -128,6 +129,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     },
     onWake: wake,
   });
+  jumping = scroll.jumping;
+  jumpTarget = scroll.target;
   root.dataset.settled = 'true';
   const detachKeys = attachKeys(document, {
     starts: [...scenes.map((_, i) => sceneStart(scenes, i)), 1], // последняя остановка: самый конец фильма

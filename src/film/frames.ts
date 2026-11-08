@@ -10,6 +10,22 @@ export function shouldPreload(progress: number, diveStart: number, screens: numb
   return progress >= diveStart - 1 / screens;
 }
 
+export type WorkZone = { start: number; end: number };
+
+/**
+ * Какие работы грузить. Работа нужна, пока прогресс в её окне: от запаса перед dive до запаса после turn.
+ * Во время прыжка берём только то, что рядом с точкой назначения: работы, мимо которых фильм пролетает за секунду, не грузим.
+ */
+export function worksToPreload(progress: number, zones: WorkZone[], screens: number, destination: number | null): number[] {
+  const at = destination ?? progress;
+  const m = 1 / screens;
+  const out: number[] = [];
+  zones.forEach((z, k) => {
+    if (at >= z.start - m && at <= z.end + m) out.push(k);
+  });
+  return out;
+}
+
 const DEFAULT_CONCURRENCY = 4;
 
 export function createFrameSequence<T>(o: {

@@ -124,6 +124,61 @@ describe('createScroll', () => {
     expect(s.tick(1 / 60)).toBe(false);
   });
 
+  it('прыжок идёт фиксированное время с плавным стартом и финишем, а не экспонентой', () => {
+    const { s } = setup();
+    s.jumpTo(1);
+    expect(s.jumping()).toBe(true);
+    let t = 0;
+    const seen: number[] = [];
+    while (s.tick(1 / 60) && t < 5) {
+      t += 1 / 60;
+      seen.push(s.progress());
+    }
+    expect(t).toBeGreaterThan(0.8);
+    expect(t).toBeLessThanOrEqual(1.2); // ~0.9 с
+    expect(s.progress()).toBe(1);
+    expect(s.jumping()).toBe(false);
+    for (let i = 1; i < seen.length; i++) expect(seen[i]!).toBeGreaterThanOrEqual(seen[i - 1]!);
+    // ease-in-out: на середине времени примерно середина пути, первые и последние кадры медленные
+    expect(seen[Math.floor(seen.length / 2)]!).toBeGreaterThan(0.4);
+    expect(seen[Math.floor(seen.length / 2)]!).toBeLessThan(0.6);
+    expect(seen[2]!).toBeLessThan(0.02);
+  });
+
+  it('длина прыжка не зависит от расстояния', () => {
+    const dur = (to: number) => {
+      const { s } = setup();
+      s.jumpTo(to);
+      let t = 0;
+      while (s.tick(1 / 60) && t < 5) t += 1 / 60;
+      return t;
+    };
+    expect(Math.abs(dur(0.05) - dur(1))).toBeLessThan(0.05);
+  });
+
+  it('новый прыжок на лету стартует с текущего прогресса без скачка', () => {
+    const { s } = setup();
+    s.jumpTo(1);
+    for (let i = 0; i < 25; i++) s.tick(1 / 60);
+    const mid = s.progress();
+    s.jumpTo(0);
+    s.tick(1 / 600);
+    expect(Math.abs(s.progress() - mid)).toBeLessThan(0.01);
+    let t = 0;
+    while (s.tick(1 / 60) && t < 5) t += 1 / 60;
+    expect(s.progress()).toBe(0);
+  });
+
+  it('нативная прокрутка посреди прыжка отменяет его: дальше обычное сглаживание', () => {
+    const { win, s } = setup();
+    s.jumpTo(1);
+    for (let i = 0; i < 10; i++) s.tick(1 / 60);
+    win.scrollY = 1234;
+    win.dispatchEvent(new Event('scroll'));
+    expect(s.jumping()).toBe(false);
+    expect(s.target()).toBeCloseTo(1234 / (9 * 844), 6);
+  });
+
   it('прыжок к точке попадает ровно в неё несмотря на округление scrollY', () => {
     const { win, s } = setup();
     s.jumpTo(0.3437);

@@ -22,7 +22,8 @@ test.beforeEach(async ({ page }) => {
 
 test('клик по метке «Лилея» ведёт к сцене play', async ({ page }) => {
   await page.getByRole('button', { name: 'Лилея' }).click();
-  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'play');
   await expect(page.getByRole('button', { name: 'Лилея' })).toHaveAttribute('aria-current', 'true');
   // метка приводит туда, где название, «концепт» и задача уже на экране
   await settled(page);
@@ -43,6 +44,20 @@ test('метка «Контакты» ведёт к сцене contacts', async 
   await expect(page.getByRole('link', { name: 'Написать в Telegram' }).first()).toBeVisible();
 });
 
+test('прыжок на «Контакты» не грузит кадры работ, мимо которых пролетает', async ({ page }) => {
+  const frames: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('/frames/')) frames.push(r.url());
+  });
+  await page.getByRole('button', { name: 'Контакты' }).click();
+  await settled(page);
+  await page.waitForTimeout(300);
+  expect(frames).toEqual([]);
+  await page.getByRole('button', { name: 'Лилея' }).click();
+  await settled(page);
+  await expect.poll(() => frames.length).toBeGreaterThan(0); // у назначения кадры грузятся
+});
+
 test('метки: три работы и контакты, в порядке фильма', async ({ page }) => {
   const names = await page.locator('.film-rail button').allTextContents();
   expect(names).toEqual(['Лилея', 'Зерно и Дым', 'Резиденция Север', 'Контакты']);
@@ -53,7 +68,8 @@ test('метки доступны с клавиатуры', async ({ page }) => 
   await btn.focus();
   await expect(btn).toBeFocused();
   await page.keyboard.press('Enter');
-  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'play');
 });
 
 test('кнопки и подписи рейки не пересекают «Обсудить проект» в начале, в play и в contacts', async ({ page }) => {
@@ -79,20 +95,24 @@ test('кнопки и подписи рейки не пересекают «Об
   };
   await hit();
   await page.getByRole('button', { name: 'Лилея' }).click();
-  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'play');
   await hit();
   await page.getByRole('button', { name: 'Контакты' }).click();
-  await expect(html(page)).toHaveAttribute('data-scene', 'contacts', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'contacts');
   await hit();
 });
 
 test('клавиши: PageDown к следующей сцене, PageUp обратно, Space без двойной прокрутки', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'клавиатура');
   await page.keyboard.press('PageDown');
-  await expect(html(page)).toHaveAttribute('data-scene', 'open', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'open');
   await settled(page);
   await page.keyboard.press('PageUp');
-  await expect(html(page)).toHaveAttribute('data-scene', 'table', { timeout: 3000 });
+  await settled(page);
+  await expect(html(page)).toHaveAttribute('data-scene', 'table');
   await settled(page);
   await page.keyboard.press('Space');
   await settled(page);

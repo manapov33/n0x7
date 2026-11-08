@@ -4,6 +4,10 @@ const SNAP = 5e-4;
 /** Тишина после последнего scroll/resize, после которой можно менять длину фильма. */
 const IDLE_MS = 200;
 
+/** Длительность прыжка (метка рейки, клавиши), секунды. */
+export const JUMP_SECONDS = 0.9;
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
 /** Экспоненциальное приближение: за halfLife секунд остаток уменьшается вдвое. */
 export function smoothToward(current: number, target: number, dt: number, halfLife = 0.12): number {
   if (dt <= 0) return current;
@@ -16,6 +20,8 @@ export type Scroll = {
   /** Цель сглаживания (где остановится прогресс). */
   target(): number;
   jumpTo(p: number): void;
+  /** Идёт прыжок с фиксированной длительностью (не нативная прокрутка). */
+  jumping(): boolean;
   /** Шаг сглаживания; true, пока прогресс не дошёл до цели. */
   tick(dt: number): boolean;
   destroy(): void;
@@ -55,6 +61,8 @@ export function createScroll(o: {
   let current = target;
   // Прыжок: целевой прогресс известен точно, а scrollY округляется до пикселя.
   let jump: { top: number; p: number } | null = null;
+  // Анимация прыжка: прогресс идёт от точки старта к цели за JUMP_SECONDS по ease-in-out.
+  let tween: { from: number; to: number; t: number } | null = null;
   o.onProgress(current);
 
   // Рост высоты (адресная строка спряталась) применяется только в покое: scrollTo посреди жеста обрывает инерцию.
@@ -80,6 +88,7 @@ export function createScroll(o: {
     if (jump && Math.abs(win.scrollY - jump.top) < 1.5) target = jump.p;
     else {
       jump = null;
+      tween = null; // пользователь взял прокрутку сам
       target = fromScroll();
     }
     o.onWake?.();
@@ -115,12 +124,25 @@ export function createScroll(o: {
     jumpTo(p) {
       target = clamp01(p);
       jump = { top: scrollToProgress(target), p: target };
+      tween = current === target ? null : { from: current, to: target, t: 0 };
       o.onWake?.();
     },
+    jumping: () => tween !== null,
     tick(dt) {
-      if (current === target) return false;
-      let next = smoothToward(current, target, dt);
-      if (Math.abs(target - next) < SNAP) next = target;
+      if (current === target) {
+        tween = null;
+        return false;
+      }
+      let next: number;
+      if (tween) {
+        tween.t += Math.max(0, dt);
+        const k = Math.min(1, tween.t / JUMP_SECONDS);
+        next = k >= 1 ? tween.to : tween.from + (tween.to - tween.from) * easeInOut(k);
+        if (k >= 1) tween = null;
+      } else {
+        next = smoothToward(current, target, dt);
+        if (Math.abs(target - next) < SNAP) next = target;
+      }
       current = next;
       o.onProgress(current);
       return current !== target;

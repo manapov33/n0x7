@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createFrameSequence, frameIndex, shouldPreload } from '../../src/film/frames.ts';
+import { createFrameSequence, frameIndex, shouldPreload, worksToPreload } from '../../src/film/frames.ts';
 
 describe('frameIndex', () => {
   it('t 0..1 → 0..count-1', () => {
@@ -95,5 +95,28 @@ describe('shouldPreload', () => {
     expect(shouldPreload(0.3, 0.5, 10)).toBe(false);
     expect(shouldPreload(0.41, 0.5, 10)).toBe(true);
     expect(shouldPreload(0.9, 0.5, 10)).toBe(true);
+  });
+});
+
+describe('worksToPreload', () => {
+  // три работы по 0.1 экрана-окна; screens = 10 → запас 0.1 с каждой стороны
+  const zones = [
+    { start: 0.2, end: 0.3 },
+    { start: 0.4, end: 0.5 },
+    { start: 0.6, end: 0.7 },
+  ];
+  it('обычная прокрутка: работы, к которым подошли или рядом с которыми находятся', () => {
+    expect(worksToPreload(0, zones, 10, null)).toEqual([]);
+    expect(worksToPreload(0.15, zones, 10, null)).toEqual([0]);
+    expect(worksToPreload(0.35, zones, 10, null)).toEqual([0, 1]);
+  });
+  it('конец фильма: пройденные работы уже не грузятся', () => {
+    expect(worksToPreload(1, zones, 10, null)).toEqual([]);
+    expect(worksToPreload(0.85, zones, 10, null)).toEqual([]);
+  });
+  it('во время прыжка грузится только работа назначения, а не все по пути', () => {
+    expect(worksToPreload(0.45, zones, 10, 0.65)).toEqual([2]);
+    expect(worksToPreload(0.05, zones, 10, 1)).toEqual([]);
+    expect(worksToPreload(0.5, zones, 10, 0.25)).toEqual([0]);
   });
 });
