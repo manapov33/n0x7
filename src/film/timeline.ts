@@ -19,6 +19,8 @@ const TABLE_FACTOR = 2.2;
 // В портрете (телефон) стол снимается от закрытого журнала: он занимает около половины ширины экрана.
 const TABLE_FACTOR_PORTRAIT = 1.75;
 const EPS = 1e-9;
+/** Доля play, на которой надпись работы уже полностью проявлена; сюда приводит метка рейки. */
+export const WORK_LANDING_T = 0.25;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smooth = (t: number) => {
@@ -35,6 +37,11 @@ export function sceneStart(scenes: SceneSpec[], index: number): number {
   let acc = 0;
   for (let i = 0; i < index; i++) acc += scenes[i]!.screens;
   return acc / totalScreens(scenes);
+}
+
+/** Прогресс фильма в точке t (0..1) внутри сцены index. */
+export function sceneProgress(scenes: SceneSpec[], index: number, t: number): number {
+  return (sceneStart(scenes, index) * totalScreens(scenes) + clamp01(t) * scenes[index]!.screens) / totalScreens(scenes);
 }
 
 export function computeFilm(progress: number, input: FilmInput): FilmState {
@@ -94,7 +101,9 @@ export function computeFilm(progress: number, input: FilmInput): FilmState {
     // the spread (Task 4 draws it on the page plane), not as a viewport layer.
     if (cur.id === 'dive') work = { index: cur.work, frame: 0, screen: s };
     else if (cur.id === 'play') work = { index: cur.work, frame: t, screen: 1 };
-    else if (cur.id === 'surface') work = { index: cur.work, frame: 1, screen: 1 - s };
+    // Выход: ролик отматывается назад (кадр 1 − s) и приходит к кадру 0, который и есть страницы;
+    // экран держим до самого конца и гасим в последней десятой, когда под ним уже тот же кадр.
+    else if (cur.id === 'surface') work = { index: cur.work, frame: 1 - s, screen: 1 - smooth((t - 0.9) / 0.1) };
   }
 
   // overlay
@@ -102,7 +111,7 @@ export function computeFilm(progress: number, input: FilmInput): FilmState {
   for (const sc of scenes) if (sc.work !== undefined) overlay[`work-${sc.work}`] = 0;
   if (cur.id === 'table') overlay.hero = 1;
   else if (cur.id === 'open') overlay.hero = 1 - smooth(t * 2);
-  else if (cur.id === 'play') overlay[`work-${cur.work}`] = smooth(t * 2);
+  else if (cur.id === 'play') overlay[`work-${cur.work}`] = smooth(t * 4);
   else if (cur.id === 'surface') overlay[`work-${cur.work}`] = 1 - s;
   else if (cur.id === 'services') overlay.services = smooth(t * 4);
   else if (cur.id === 'contacts') {

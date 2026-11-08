@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildScenes, SCREENS } from '../../src/film/scenes.ts';
 import { fitCamera } from '../../src/scene/camera.ts';
 import { FOV, PAGE_H, PAGE_W } from '../../src/scene/dims.ts';
-import { computeFilm, sceneStart, totalScreens } from '../../src/film/timeline.ts';
+import { computeFilm, sceneProgress, sceneStart, totalScreens } from '../../src/film/timeline.ts';
 
 const scenes = buildScenes(3);
 const input = { scenes, spreadCount: 5, aspect: 1.6 };
@@ -51,6 +51,7 @@ describe('film timeline', () => {
         for (const k of Object.keys(lo.overlay)) close(lo.overlay[k]!, hi.overlay[k]!, `overlay.${k}`);
         lo.sheets.forEach((v, j) => close(v, hi.sheets[j]!, `sheet ${j}`));
         close(lo.work?.screen ?? 0, hi.work?.screen ?? 0, 'work.screen');
+        close(lo.work?.frame ?? 0, hi.work?.frame ?? 0, 'work.frame');
       }
     }
   });
@@ -84,5 +85,35 @@ describe('film timeline', () => {
     expect(s.spread).toBe(2);
     expect(computeFilm(sceneStart(scenes, 14), input).spread).toBe(4);
     expect(computeFilm(sceneStart(scenes, 14), input).sheets[0]).toBe(computeFilm(1, input).coverOpen);
+  });
+  it('surface rewinds the clip to frame 0 (= the pages) with the screen kept until the very end', () => {
+    for (const aspect of [0.46, 1.6]) {
+      const inp = { ...input, aspect };
+      const at = (t: number) => computeFilm(sceneProgress(scenes, 4, t), inp);
+      expect(at(0.001).work).toEqual({ index: 0, frame: expect.closeTo(1, 2), screen: 1 });
+      expect(at(0.5).work?.frame).toBeCloseTo(0.5, 5); // smooth(0.5) = 0.5
+      expect(at(0.5).work?.screen).toBe(1);
+      expect(at(0.85).work?.screen).toBe(1);
+      expect(at(0.999).work?.frame).toBeLessThan(0.01);
+      expect(at(0.999).work?.screen).toBeLessThan(0.05);
+      // кадр только убывает, экран только гаснет
+      let prevF = 2;
+      let prevS = 2;
+      for (let i = 1; i < 100; i++) {
+        const w = at(i / 100).work!;
+        expect(w.frame).toBeLessThanOrEqual(prevF + 1e-9);
+        expect(w.screen).toBeLessThanOrEqual(prevS + 1e-9);
+        prevF = w.frame;
+        prevS = w.screen;
+      }
+    }
+  });
+  it('work title is fully in by a quarter of play and in at the rail landing point', () => {
+    const k = (t: number) => computeFilm(sceneProgress(scenes, 3, t), input).overlay['work-0']!;
+    expect(k(0)).toBe(0);
+    expect(k(0.1)).toBeGreaterThan(0.1);
+    expect(k(0.1)).toBeLessThan(0.9);
+    expect(k(0.25)).toBeCloseTo(1, 6);
+    expect(k(0.6)).toBe(1);
   });
 });
