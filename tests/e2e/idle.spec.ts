@@ -17,6 +17,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 const draws = (page: Page) => page.evaluate(() => (window as unknown as { __draws: number }).__draws);
+const settled = (page: Page) =>
+  page.waitForFunction(() => document.documentElement.dataset.settled === 'true');
 const reset = (page: Page) => page.evaluate(() => ((window as unknown as { __draws: number }).__draws = 0));
 
 async function ready(page: Page) {
@@ -38,6 +40,7 @@ test('прокрутка перерисовывает, потом снова п�
   await reset(page);
   await page.evaluate(() => window.scrollTo(0, 0.1 * (document.documentElement.scrollHeight - innerHeight)));
   await expect.poll(() => draws(page)).toBeGreaterThan(0);
+  await settled(page); // сглаживание сошлось
   await page.waitForTimeout(500);
   await reset(page);
   await page.waitForTimeout(1000);
@@ -76,6 +79,7 @@ test('приход текстуры перерисовывает', async ({ page
   hold = true; // текстуры разворота 3 грузятся, когда фильм дошёл до разворота 2
   await page.evaluate(() => window.scrollTo(0, 0.4 * (document.documentElement.scrollHeight - innerHeight)));
   await expect.poll(() => held.length).toBeGreaterThan(0);
+  await settled(page);
   await page.waitForTimeout(1000); // сцена применена, текстуры придержаны
   await reset(page);
   await page.waitForTimeout(500);

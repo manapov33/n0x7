@@ -1,0 +1,116 @@
+import { expect, test, type Page } from '@playwright/test';
+import { site } from '../../src/content/site.ts';
+import { buildScenes } from '../../src/film/scenes.ts';
+import { sceneStart } from '../../src/film/timeline.ts';
+
+const scenes = buildScenes(site.spreads.filter((x) => x.kind === 'work').length);
+
+const html = (page: Page) => page.locator('html');
+const settled = (page: Page) =>
+  page.waitForFunction(() => document.documentElement.dataset.settled === 'true');
+const filmProgress = (page: Page) =>
+  page.evaluate(() => {
+    const spacer = document.getElementById('film-spacer')!;
+    return scrollY / (spacer.offsetHeight - innerHeight);
+  });
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+  await expect(html(page)).toHaveAttribute('data-mode', 'book');
+  await expect(page.locator('#loading')).toHaveCount(0);
+});
+
+test('клик по метке «Лилея» ведёт к сцене play', async ({ page }) => {
+  await page.getByRole('button', { name: 'Лилея' }).click();
+  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+  await expect(page.getByRole('button', { name: 'Лилея' })).toHaveAttribute('aria-current', 'true');
+});
+
+test('метка «Контакты» ведёт к сцене contacts', async ({ page }) => {
+  await page.getByRole('button', { name: 'Контакты' }).click();
+  await expect(html(page)).toHaveAttribute('data-scene', 'contacts', { timeout: 3000 });
+});
+
+test('метки: три работы и контакты, в порядке фильма', async ({ page }) => {
+  const names = await page.locator('.film-rail button').allTextContents();
+  expect(names).toEqual(['Зерно и Дым', 'Лилея', 'Резиденция Север', 'Контакты']);
+});
+
+test('метки доступны с клавиатуры', async ({ page }) => {
+  const btn = page.getByRole('button', { name: 'Зерно и Дым' });
+  await btn.focus();
+  await expect(btn).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
+});
+
+test('рейка не перекрывает кнопку «Обсудить проект»', async ({ page }) => {
+  const cta = await page.locator('.ui-cta').boundingBox();
+  const rail = await page.locator('.film-rail').boundingBox();
+  expect(cta && rail).toBeTruthy();
+  const overlap = !(cta!.x + cta!.width <= rail!.x || rail!.x + rail!.width <= cta!.x || cta!.y + cta!.height <= rail!.y || rail!.y + rail!.height <= cta!.y);
+  expect(overlap).toBe(false);
+});
+
+test('клавиши: PageDown к следующей сцене, PageUp обратно, Space без двойной прокрутки', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'клавиатура');
+  await page.keyboard.press('PageDown');
+  await expect(html(page)).toHaveAttribute('data-scene', 'open', { timeout: 3000 });
+  await settled(page);
+  await page.keyboard.press('PageUp');
+  await expect(html(page)).toHaveAttribute('data-scene', 'table', { timeout: 3000 });
+  await settled(page);
+  await page.keyboard.press('Space');
+  await settled(page);
+  const p = await filmProgress(page);
+  expect(p).toBeCloseTo(sceneStart(scenes, 1), 3); // ровно одна сцена, браузер не доложил прокрутку
+});
+
+test('клавиши не работают в панели контактов', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'клавиатура');
+  await page.locator('.ui-cta').click();
+  await expect(page.locator('#contact-panel')).toBeVisible();
+  await page.locator('#contact-panel').focus();
+  await page.keyboard.press('PageDown');
+  await page.waitForTimeout(300);
+  expect(await html(page).getAttribute('data-scene')).toBe('table');
+});
+
+test('телефон: изменение высоты окна на 60 px не двигает сцену и прогресс', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'только телефон');
+  await page.evaluate(() => {
+    const spacer = document.getElementById('film-spacer')!;
+    window.scrollTo(0, 0.5 * (spacer.offsetHeight - innerHeight));
+  });
+  await page.waitForFunction(() => document.documentElement.dataset.scene !== 'table');
+  await settled(page);
+  const h0 = await page.evaluate(() => document.getElementById('film-spacer')!.offsetHeight);
+  const p0 = await filmProgress(page);
+  const s0 = await html(page).getAttribute('data-scene');
+  for (const h of [784, 844, 904, 844]) {
+    await page.setViewportSize({ width: 390, height: h });
+    await page.waitForTimeout(150);
+    await settled(page);
+    expect(Math.abs((await filmProgress(page)) - p0)).toBeLessThan(0.01);
+    expect(await html(page).getAttribute('data-scene')).toBe(s0);
+  }
+  const h1 = await page.evaluate(() => document.getElementById('film-spacer')!.offsetHeight);
+  expect(h1).toBeGreaterThanOrEqual(h0); // защёлка не укорачивает фильм
+});
+
+test('рейка видна и внутри окна на обоих размерах', async ({ page }) => {
+  const box = await page.locator('.film-rail').boundingBox();
+  const vp = page.viewportSize()!;
+  expect(box!.x + box!.width).toBeLessThanOrEqual(vp.width + 1);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(vp.height);
+});
+
+test('запасная страница: рейки нет', async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto('http://localhost:4173/');
+  await expect(page.locator('html')).not.toHaveAttribute('data-mode', 'book');
+  await expect(page.locator('.film-rail')).toHaveCount(0);
+  await ctx.close();
+});

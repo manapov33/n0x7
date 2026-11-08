@@ -1,0 +1,142 @@
+.film-rail {
+  display: none;
+}
+
+html[data-mode='book'] .film-rail {
+  display: block;
+  position: fixed;
+  z-index: 15; /* ниже интерфейса (кнопка, панель), выше canvas */
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: min(46vh, 340px);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  pointer-events: none; /* canvas остаётся доступным; ловят только кнопки */
+}
+
+.film-rail-track {
+  position: relative;
+  height: 100%;
+  width: 2px;
+  margin-right: 20px;
+  background: rgba(236, 230, 218, 0.22);
+  float: right;
+}
+
+/* Тёмная подложка: рейка читается и на светлых страницах журнала. */
+.film-rail-track::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  bottom: -16px;
+  left: -14px;
+  width: 30px;
+  border-radius: 15px;
+  background: rgba(11, 10, 9, 0.62);
+}
+
+.film-rail-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  background: var(--accent);
+}
+
+.film-rail-mark {
+  position: absolute;
+  right: -21px;
+  width: 44px;
+  height: 44px;
+  margin-top: -22px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(236, 230, 218, 0.7);
+  cursor: pointer;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.film-rail-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-right: 17px;
+  border: 1.5px solid rgba(236, 230, 218, 0.8);
+  border-radius: 50%;
+  background: #0b0a09;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.film-rail-mark.passed .film-rail-dot,
+.film-rail-mark[aria-current='true'] .film-rail-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.film-rail-mark[aria-current='true'] .film-rail-dot {
+  transform: scale(1.35);
+}
+
+.film-rail-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: rgba(11, 10, 9, 0.72);
+  transition: opacity 0.2s;
+}
+
+.film-rail-mark[aria-current='true'] .film-rail-label {
+  color: #ece6da;
+}
+
+.film-rail-mark:hover .film-rail-label,
+.film-rail-mark:focus-visible .film-rail-label {
+  color: var(--accent);
+}
+
+.film-rail-mark:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+  border-radius: 8px;
+}
+
+/* Телефон: только точки у правого края, подпись по фокусу; выше правой нижней кнопки. */
+@media (max-width: 480px) {
+  html[data-mode='book'] .film-rail {
+    right: 0;
+    top: 44%;
+    height: min(38vh, 280px);
+  }
+  .film-rail-track {
+    margin-right: 12px;
+  }
+  .film-rail-mark {
+    right: -15px;
+    width: 40px;
+  }
+  .film-rail-dot {
+    margin-right: 11px;
+  }
+  .film-rail-label {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .film-rail-mark:focus-visible .film-rail-label {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .film-rail-dot,
+  .film-rail-label {
+    transition: none;
+  }
+}

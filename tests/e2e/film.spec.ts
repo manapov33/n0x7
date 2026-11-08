@@ -3,13 +3,14 @@ import { buildScenes } from '../../src/film/scenes.ts';
 import { totalScreens } from '../../src/film/timeline.ts';
 import { site } from '../../src/content/site.ts';
 
-// Прокрутка до доли прогресса фильма; ждём два кадра, чтобы сцена применилась.
+// Прокрутка до доли прогресса фильма; ждём, пока сглаживание сойдётся.
 async function scrollToProgress(page: Page, p: number) {
   await page.evaluate(async (p) => {
     const spacer = document.getElementById('film-spacer')!;
     window.scrollTo(0, p * (spacer.offsetHeight - window.innerHeight));
     await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
   }, p);
+  await page.waitForFunction(() => document.documentElement.dataset.settled === 'true');
 }
 const scene = (page: Page) => page.locator('html').getAttribute('data-scene');
 

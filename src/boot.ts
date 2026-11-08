@@ -1,6 +1,8 @@
 import { site } from './content/site.ts';
 import { buildScenes } from './film/scenes.ts';
-import { computeFilm, totalScreens, type FilmState } from './film/timeline.ts';
+import { createRail } from './film/rail.ts';
+import { attachKeys, createScroll } from './film/scroll.ts';
+import { computeFilm, sceneStart, totalScreens, type FilmState } from './film/timeline.ts';
 import { attachLamp, createUi } from './ui/ui.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from './util/timeout.ts';
 
@@ -56,12 +58,8 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   let detachLamp: (() => void) | undefined;
   let failed = false;
 
-  // Прогресс = scrollY / (высота спейсера − высота окна).
-  const spacerHeight = () => screens * window.innerHeight;
-  const maxScroll = () => Math.max(1, spacerHeight() - window.innerHeight);
-  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-  spacer.style.height = `${spacerHeight()}px`;
-  let progress = clamp01(window.scrollY / maxScroll());
+  // Прогресс фильма сглаживается (createScroll); нативная прокрутка остаётся нативной.
+  let progress = 0;
   const apply = () => {
     const state = computeFilm(progress, {
       scenes,
@@ -72,27 +70,64 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     label(state);
     app?.applyFilm(state);
   };
-  const onScroll = () => {
-    progress = clamp01(window.scrollY / maxScroll());
-    apply();
+
+  const works = site.spreads.filter((s) => s.kind === 'work');
+  const marks = works.map((w, k) => ({
+    label: w.title,
+    progress: sceneStart(scenes, scenes.findIndex((s) => s.id === 'play' && s.work === k)),
+  }));
+  marks.push({ label: 'Контакты', progress: sceneStart(scenes, scenes.findIndex((s) => s.id === 'contacts')) });
+  const rail = createRail(document.body, marks, (p) => scroll.jumpTo(p));
+
+  // Кадры идут, пока прогресс не сошёлся с целью; в покое цикл спит.
+  let raf = 0;
+  let last = 0;
+  const loop = (now: number) => {
+    raf = 0;
+    const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+    last = now;
+    const more = scroll.tick(dt);
+    root.dataset.settled = String(!more);
+    if (more) raf = requestAnimationFrame(loop);
   };
-  // При изменении размера держим прогресс, а не пиксели прокрутки.
-  const onResize = () => {
-    spacer.style.height = `${spacerHeight()}px`;
-    window.scrollTo(0, progress * maxScroll());
-    apply();
+  const wake = () => {
+    if (raf) return;
+    last = performance.now();
+    root.dataset.settled = 'false';
+    raf = requestAnimationFrame(loop);
   };
-  window.addEventListener('scroll', onScroll, { passive: true });
+  const scroll = createScroll({
+    win: window,
+    spacer,
+    screens,
+    onProgress: (p) => {
+      progress = p;
+      apply();
+      rail.update(p);
+    },
+    onWake: wake,
+  });
+  root.dataset.settled = 'true';
+  const detachKeys = attachKeys(document, {
+    starts: scenes.map((_, i) => sceneStart(scenes, i)),
+    target: scroll.target,
+    jumpTo: scroll.jumpTo,
+  });
+  // Размер окна: камера пересчитывает аспект (scene.ts), длину фильма держит createScroll.
+  const onResize = () => apply();
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);
-  apply();
 
   const fail = () => {
     if (failed) return;
     failed = true;
     root.removeAttribute('data-mode');
     root.removeAttribute('data-scene');
-    window.removeEventListener('scroll', onScroll);
+    root.removeAttribute('data-settled');
+    cancelAnimationFrame(raf);
+    scroll.destroy();
+    detachKeys();
+    rail.destroy();
     window.removeEventListener('resize', onResize);
     window.removeEventListener('orientationchange', onResize);
     detachLamp?.();
