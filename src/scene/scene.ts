@@ -226,6 +226,8 @@ export function createApp(
         lastSpread = state.spread;
         // Лист переворачивается ещё на предыдущем развороте: оборот нужен заранее.
         for (const p of needed(lastSpread)) void p;
+        // Лист следующего разворота перевернётся ещё до того, как фильм дойдёт до него: просим его заранее.
+        void store.ensure(Math.min(lastSpread + 1, spreads.length - 1));
         if (!readyStarted) {
           readyStarted = true;
           void settleReady();

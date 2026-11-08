@@ -115,7 +115,7 @@ test('перезагрузка посередине: экран загрузки
   await expect(page.locator('#loading')).toHaveCount(1); // текстуры ещё не пришли
   await expect(page.locator('#loading')).toHaveCount(0, { timeout: 15000 });
   await page.waitForTimeout(100);
-  // сцена play второй работы: разворот 2 и соседние 1..3 = 6 страниц
+  // сцена play второй работы: разворот 2, соседние 1 и 3 = 6 страниц
   expect(finished).toBeGreaterThanOrEqual(6);
 });
 
@@ -156,4 +156,24 @@ test('canvas совпадает с областью без полосы прок
   expect(m.bw / m.bh).toBeCloseTo(m.cw / m.ch, 2);
   await ctx.close();
   await browser.close();
+});
+
+test('текстуры следующего разворота запрашиваются заранее', async ({ browser }) => {
+  const page = await browser.newPage();
+  const seen = new Set<string>();
+  page.on('request', (r) => {
+    const m = /\/pages\/([^/?]+\.webp)/.exec(r.url());
+    if (m) seen.add(m[1]!);
+  });
+  const files = (i: number) =>
+    [site.spreads[i]!.left, site.spreads[i]!.right].filter(Boolean).map((u) => u!.replace(/^.*\//, ''));
+  await page.goto('http://localhost:4173/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-scene', 'table'); // разворот 0
+  for (const f of files(1)) expect(seen.has(f), f).toBe(true);
+  // Работа 2 (play): разворот 2 текущий, разворот 3 уже запрошен, хотя фильм до него не дошёл.
+  await scrollToProgress(page, 0.5);
+  await expect(page.locator('html')).toHaveAttribute('data-scene', 'play');
+  await expect.poll(() => files(3).every((f) => seen.has(f))).toBe(true);
+  await page.close();
 });
