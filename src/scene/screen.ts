@@ -125,7 +125,7 @@ export function createScreen(o: {
     }
     texture.needsUpdate = true;
     shownUrl = url;
-    o.requestRender();
+    if (current) o.requestRender(); // скрытый экран перерисовки не просит
   }
 
   let current: { work: number; entry: Entry } | undefined;
@@ -186,6 +186,7 @@ export function createScreen(o: {
       const root = document.documentElement;
       if (!work || !video) {
         current = undefined;
+        wantedUrl = undefined; // поздний decode() не должен применить кадр к скрытому экрану
         delete root.dataset.frame;
         delete root.dataset.frameShown;
         if (opacity !== 0) {
