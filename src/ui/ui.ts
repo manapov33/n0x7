@@ -1,15 +1,7 @@
-import type { BookModel } from '../book/model.ts';
 import { esc } from '../fallback/render.ts';
-import { isPhone } from '../controls/viewport.ts';
 import type { Site } from '../content/types.ts';
 
 export type Ui = {
-  /** Модель появляется позже интерфейса: до этого кнопка только открывает панель. */
-  setModel(model: BookModel): void;
-  /** Перечитать номер разворота из модели и обновить счётчик и подсказку. */
-  update(): void;
-  /** Тап мимо панели: если она открыта, закрывает её и возвращает true (тап не должен листать). */
-  dismissOutside(): boolean;
   /** Убрать интерфейс и снять слушатели. */
   destroy(): void;
 };
@@ -32,10 +24,6 @@ export function attachLamp(
 }
 
 export function createUi(root: HTMLElement, site: Site): Ui {
-  const total = site.spreads.length;
-  const last = total - 1;
-  let model: BookModel | undefined;
-
   const ui = document.createElement('div');
   ui.id = 'ui-root';
   const phoneHref = 'tel:' + site.phone.replace(/[^\d+]/g, '');
@@ -44,8 +32,6 @@ export function createUi(root: HTMLElement, site: Site): Ui {
       <span class="ui-logo">${esc(site.name)}</span>
       <span class="ui-tagline">${esc(site.tagline)}</span>
     </header>
-    <div class="ui-hint" id="ui-hint">листайте</div>
-    <div id="counter" data-spread="0" aria-live="off"></div>
     <button type="button" class="ui-cta" aria-controls="contact-panel" aria-expanded="false">Обсудить проект</button>
     <section id="contact-panel" role="dialog" aria-labelledby="contact-title" tabindex="-1" hidden>
       <h2 id="contact-title">Связаться</h2>
@@ -55,74 +41,41 @@ export function createUi(root: HTMLElement, site: Site): Ui {
     </section>`;
   root.append(ui);
 
-  const counter = ui.querySelector<HTMLElement>('#counter')!;
-  const hint = ui.querySelector<HTMLElement>('#ui-hint')!;
   const cta = ui.querySelector<HTMLButtonElement>('.ui-cta')!;
   const panel = ui.querySelector<HTMLElement>('#contact-panel')!;
   const close = ui.querySelector<HTMLButtonElement>('.ui-close')!;
 
-  // Последний разворот сам открывает панель один раз; закрытая посетителем, она молчит до ухода с него.
-  let seen = 0;
-  let dismissed = false;
-  const show = () => {
+  const open = () => {
     panel.hidden = false;
     cta.setAttribute('aria-expanded', 'true');
-  };
-
-  const update = () => {
-    const s = model?.spread ?? 0;
-    if (s !== last) dismissed = false;
-    if (s === last && seen !== last && !dismissed) show();
-    seen = s;
-    counter.dataset.spread = String(s);
-    counter.textContent = `${s + 1} / ${total}`;
-    // На телефоне подсказка живёт на каждой странице (там листают по странице), на десктопе — только на обложке.
-    hint.hidden = s !== 0 && !isPhone(window.innerWidth);
-  };
-
-  const open = () => {
-    show();
     panel.focus({ preventScroll: true });
   };
   const closePanel = () => {
     if (panel.hidden) return;
-    if (model?.spread === last) dismissed = true;
     const hadFocus = panel.contains(document.activeElement) || document.activeElement === document.body;
     panel.hidden = true;
     cta.setAttribute('aria-expanded', 'false');
     if (hadFocus) cta.focus();
   };
 
-  cta.addEventListener('click', () => {
-    if (!panel.hidden) {
-      closePanel();
-      return;
-    }
-    open();
-    model?.goTo(last);
-  });
+  cta.addEventListener('click', () => (panel.hidden ? open() : closePanel()));
   close.addEventListener('click', closePanel);
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape') closePanel();
   };
+  // Касание мимо открытой панели (по сцене) закрывает её.
+  const onDown = (e: Event) => {
+    const t = e.target as Node | null;
+    if (!t || panel.contains(t) || cta.contains(t)) return;
+    closePanel();
+  };
   document.addEventListener('keydown', onKey);
-  window.addEventListener('resize', update);
+  document.addEventListener('pointerdown', onDown);
 
-  update();
   return {
-    setModel(m) {
-      model = m;
-      update();
-    },
-    update,
-    dismissOutside() {
-      if (panel.hidden) return false;
-      closePanel();
-      return true;
-    },
     destroy() {
       document.removeEventListener('keydown', onKey);
-      window.removeEventListener('resize', update);
+      document.removeEventListener('pointerdown', onDown);
       ui.remove();
     },
   };

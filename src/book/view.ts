@@ -11,7 +11,8 @@ import {
   type Texture,
 } from 'three';
 import { bookOffsetX } from './offset.ts';
-import { shadowOpacity, sheetPoint, type BookModel, type Sheet } from './model.ts';
+import { shadowOpacity, sheetPoint } from './bend.ts';
+import type { Sheet } from './sheets.ts';
 
 const SEGMENTS = 24;
 const LAYER = 0.002;
@@ -32,13 +33,16 @@ type SheetView = {
 export type BookView = { group: Group; update(): void; dispose(): void };
 
 export function createBookView(o: {
-  model: BookModel;
+  /** Прогресс листа 0..1 из состояния фильма. */
+  progress: (sheet: number) => number;
+  /** Текущий разворот: текстуры подставляются только листам рядом с ним. */
+  spread: () => number;
   sheets: Sheet[];
   pageW: number;
   pageH: number;
   getTexture: (url: string) => Texture | undefined;
 }): BookView {
-  const { model, sheets, pageW, pageH } = o;
+  const { sheets, pageW, pageH } = o;
   const group = new Group();
   const count = sheets.length;
 
@@ -102,15 +106,18 @@ export function createBookView(o: {
   return {
     group,
     update() {
-      group.position.x = bookOffsetX(model.progress(0), pageW);
+      group.position.x = bookOffsetX(o.progress(0), pageW);
+      const spread = o.spread();
       views.forEach((v, i) => {
-        const p = model.progress(i);
+        const p = o.progress(i);
         if (p !== v.lastP) {
           bend(v, i, p);
           v.lastP = p;
         }
-        v.frontMap = applyTexture(v.front, sheets[i]?.front, v.frontMap);
-        v.backMap = applyTexture(v.back, sheets[i]?.back, v.backMap);
+        if (i >= spread - 2 && i <= spread + 1) {
+          v.frontMap = applyTexture(v.front, sheets[i]?.front, v.frontMap);
+          v.backMap = applyTexture(v.back, sheets[i]?.back, v.backMap);
+        }
 
         const flying = p > 0 && p < 1;
         v.shadow.visible = flying;

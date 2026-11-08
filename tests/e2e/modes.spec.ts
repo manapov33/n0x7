@@ -5,7 +5,7 @@ test('обычная загрузка: книга, canvas виден, запас
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'book');
   await expect(page.locator('canvas')).toBeVisible();
   await expect(page.locator('#fallback')).toBeHidden();
-  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '0');
+  await expect(page.locator('html')).toHaveAttribute('data-scene', 'table');
 });
 
 test('getContext возвращает null: запасная страница, canvas нет', async ({ page }) => {
@@ -34,7 +34,7 @@ test('не загрузились страницы: запасная стран�
 
 test('потеря контекста WebGL: запасная страница', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('#counter')).toHaveAttribute('data-spread', '0');
+  await expect(page.locator('html')).toHaveAttribute('data-scene', 'table');
   await expect(page.locator('#loading')).toHaveCount(0);
   await page.evaluate(() => {
     const c = document.querySelector('canvas')!;

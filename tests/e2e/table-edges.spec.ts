@@ -19,8 +19,9 @@ for (const [w, h] of [
     await expect(page.locator('html')).toHaveAttribute('data-mode', 'book');
     await expect(page.locator('#loading')).toHaveCount(0);
     await page.waitForTimeout(1500);
-    await page.keyboard.press('ArrowRight'); // разворот: самый широкий обзор стола
-    await page.waitForTimeout(3000);
+    // Сцена table: камера на самой большой высоте, виден максимум стола.
+    await expect(page.locator('html')).toHaveAttribute('data-scene', 'table');
+    await page.waitForTimeout(1000);
     // Без интерфейса поверх холста.
     await page.addStyleTag({ content: 'body > *:not(#scene) { visibility: hidden !important; }' });
     const png = await page.screenshot({ type: 'png' });

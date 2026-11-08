@@ -33,12 +33,12 @@ test('в покое отрисовок нет', async ({ page }) => {
   expect(await draws(page)).toBe(0);
 });
 
-test('листание перерисовывает, потом снова покой', async ({ page }) => {
+test('прокрутка перерисовывает, потом снова покой', async ({ page }) => {
   await ready(page);
   await reset(page);
-  await page.keyboard.press('ArrowRight');
+  await page.evaluate(() => window.scrollTo(0, 0.1 * (document.documentElement.scrollHeight - innerHeight)));
   await expect.poll(() => draws(page)).toBeGreaterThan(0);
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(500);
   await reset(page);
   await page.waitForTimeout(1000);
   expect(await draws(page)).toBe(0);
@@ -73,10 +73,10 @@ test('приход текстуры перерисовывает', async ({ page
     await r.continue();
   });
   await ready(page);
-  hold = true; // текстуры разворота 2 грузятся, когда книга дошла до разворота 1
-  await page.keyboard.press('ArrowRight');
+  hold = true; // текстуры разворота 3 грузятся, когда фильм дошёл до разворота 2
+  await page.evaluate(() => window.scrollTo(0, 0.4 * (document.documentElement.scrollHeight - innerHeight)));
   await expect.poll(() => held.length).toBeGreaterThan(0);
-  await page.waitForTimeout(3000); // переворот и камера успокоились, текстуры придержаны
+  await page.waitForTimeout(1000); // сцена применена, текстуры придержаны
   await reset(page);
   await page.waitForTimeout(500);
   expect(await draws(page)).toBe(0);

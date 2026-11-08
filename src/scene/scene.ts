@@ -13,44 +13,38 @@ import {
   WebGLRenderer,
   type Texture,
 } from 'three';
-import { buildSheets, createBookModel, type BookModel } from '../book/model.ts';
+import { buildSheets } from '../book/sheets.ts';
 import { createBookView } from '../book/view.ts';
 import { site } from '../content/site.ts';
 import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
 import { isPhone } from '../controls/viewport.ts';
-import { fitCamera } from './camera.ts';
+import type { FilmState } from '../film/timeline.ts';
 import { FOV, PAGE_H, PAGE_W } from './dims.ts';
 import { TABLE_CLEAR_COLOR, tableFadeAlpha, tablePlaneSize } from './tableMap.ts';
 
 export { PAGE_W };
-const CAM_EPS = 5e-4; // ближе этого камера считается доехавшей
 const TABLE_URL = '/scene/table.webp';
 const TABLE_URL_PHONE = '/scene/table-2048.webp';
 
 export type App = {
-  model: BookModel;
   /** Резолвится, когда загружен первый разворот (успешно или нет: ошибку сообщает onFail). */
   ready: Promise<void>;
-  setCameraTarget(x: number, target: 'spread' | 'page'): void;
+  /** Поставить сцену по состоянию фильма; рисует только если оно изменилось. */
+  applyFilm(state: FilmState): void;
   setLamp(nx: number, ny: number): void;
-  /** Ширина разворота на экране в CSS px (по текущей камере). */
-  spreadWidthPx(): number;
   dispose(): void;
 };
 
-export type AppHooks = { onSpread?(spread: number): void };
 export type AppOptions = { loadTimeoutMs?: number };
 
 export function createApp(
   canvas: HTMLCanvasElement,
   onFail: (why: string) => void,
-  hooks: AppHooks = {},
   options: AppOptions = {},
 ): App {
   const loadTimeoutMs = options.loadTimeoutMs ?? LOAD_TIMEOUT_MS;
   const spreads = site.spreads;
-  const model = createBookModel(spreads.length);
 
   let renderer: WebGLRenderer;
   try {
@@ -58,7 +52,7 @@ export function createApp(
     renderer.setClearColor(TABLE_CLEAR_COLOR, 1);
   } catch {
     onFail('renderer');
-    return { model, ready: Promise.resolve(), setCameraTarget() {}, setLamp() {}, spreadWidthPx: () => 0, dispose() {} };
+    return { ready: Promise.resolve(), applyFilm() {}, setLamp() {}, dispose() {} };
   }
 
   let disposed = false;
@@ -108,8 +102,10 @@ export function createApp(
   const scene = new Scene();
   const camera = new PerspectiveCamera(FOV, 1, 0.1, 100);
 
+  let film: FilmState | undefined;
   const view = createBookView({
-    model,
+    progress: (sheet) => film?.sheets[sheet] ?? 0,
+    spread: () => film?.spread ?? 0,
     sheets: buildSheets(spreads),
     pageW: PAGE_W,
     pageH: PAGE_H,
@@ -152,20 +148,12 @@ export function createApp(
   lamp.position.set(-1.5, 1.5, 9.5);
   scene.add(lamp, lamp.target);
 
-  // Камера
-  let camTarget = { x: 0, kind: 'page' as 'spread' | 'page' };
-  const cam = { x: 0, h: 10 };
-  let camInit = false;
-  let aspect = 1;
-  const targetHeight = () => fitCamera(aspect, camTarget.kind, PAGE_W, PAGE_H, FOV);
-
   function resize() {
     const w = Math.max(1, window.innerWidth);
     const h = Math.max(1, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(w, h, false);
-    aspect = w / h;
-    camera.aspect = aspect;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
     dirty = true;
   }
@@ -179,45 +167,13 @@ export function createApp(
   canvas.addEventListener('webglcontextlost', onLost);
 
   let lastSpread = -1;
-  let last = performance.now();
-  function frame(now: number) {
+  function frame() {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
-
-    if (model.spread !== lastSpread) {
-      lastSpread = model.spread;
-      hooks.onSpread?.(lastSpread);
-      void store.ensure(Math.max(0, lastSpread - 1));
-      void store.ensure(lastSpread);
-    }
-    const wasSettled = model.isSettled();
-    model.update(dt);
-
-    const hT = targetHeight();
-    let moving = false;
-    if (!camInit) {
-      cam.x = camTarget.x;
-      cam.h = hT;
-      camInit = true;
-      moving = true;
-    } else if (Math.abs(camTarget.x - cam.x) > CAM_EPS || Math.abs(hT - cam.h) > CAM_EPS) {
-      const k = 1 - Math.exp(-dt * 6);
-      cam.x += (camTarget.x - cam.x) * k;
-      cam.h += (hT - cam.h) * k;
-      if (Math.abs(camTarget.x - cam.x) <= CAM_EPS && Math.abs(hT - cam.h) <= CAM_EPS) {
-        cam.x = camTarget.x;
-        cam.h = hT;
-      }
-      moving = true;
-    }
-
-    // Модель дорисовывается и в кадре, где она только что успокоилась.
-    if (!dirty && wasSettled && model.isSettled() && !moving) return;
+    if (!dirty || !film) return;
     dirty = false;
     view.update();
-    camera.position.set(cam.x, 0, cam.h);
+    camera.position.set(film.camera.x, film.camera.y, film.camera.h);
     renderer.render(scene, camera);
   }
   raf = requestAnimationFrame(frame);
@@ -239,15 +195,24 @@ export function createApp(
   }
 
   return {
-    model,
     ready: store.ensure(0),
-    setCameraTarget(x, target) {
-      camTarget = { x, kind: target };
-      dirty = true;
-    },
-    spreadWidthPx() {
-      const pxPerUnit = canvas.clientHeight / 2 / (cam.h * Math.tan((FOV * Math.PI) / 360));
-      return 2 * PAGE_W * pxPerUnit;
+    applyFilm(state) {
+      if (disposed) return;
+      const prev = film;
+      film = state;
+      const same =
+        prev !== undefined &&
+        prev.camera.x === state.camera.x &&
+        prev.camera.y === state.camera.y &&
+        prev.camera.h === state.camera.h &&
+        prev.sheets.length === state.sheets.length &&
+        prev.sheets.every((p, i) => p === state.sheets[i]);
+      if (!same) dirty = true;
+      if (state.spread !== lastSpread) {
+        lastSpread = state.spread;
+        // Лист переворачивается ещё на предыдущем развороте: оборот нужен заранее.
+        for (const n of [lastSpread - 1, lastSpread, lastSpread + 1]) if (n >= 0 && n < spreads.length) void store.ensure(n);
+      }
     },
     setLamp(nx, ny) {
       lamp.position.set(-1.5 + nx * 3, 1.5 + ny * 3, 9.5);

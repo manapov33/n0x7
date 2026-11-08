@@ -11,8 +11,10 @@
   display: none;
 }
 
-html[data-mode='book'] body {
-  overflow: hidden;
+/* Страница длиной в фильм: прокрутка задаёт прогресс, canvas неподвижен. */
+#film-spacer {
+  width: 1px;
+  pointer-events: none;
 }
 
 html[data-mode='book'] #loading {

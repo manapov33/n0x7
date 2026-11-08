@@ -72,35 +72,6 @@ html[data-mode='book'] #ui-root {
   color: rgba(236, 230, 218, 0.82);
 }
 
-.ui-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 78px;
-  transform: translateX(-50%);
-  padding: 0 4px;
-  font: 12px/1 'JetBrains Mono', monospace;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(236, 230, 218, 0.82);
-  text-shadow: 0 1px 8px var(--bg), 0 0 2px var(--bg);
-  pointer-events: none;
-}
-
-.ui-hint[hidden] {
-  display: none;
-}
-
-#counter {
-  position: absolute;
-  left: 20px;
-  bottom: 28px;
-  font: 12px/1 'JetBrains Mono', monospace;
-  letter-spacing: 0.16em;
-  color: rgba(236, 230, 218, 0.82);
-  text-shadow: 0 1px 8px var(--bg), 0 0 2px var(--bg);
-  pointer-events: none;
-}
-
 .ui-cta {
   position: absolute;
   right: 20px;
@@ -181,7 +152,6 @@ html[data-mode='book'] #ui-root {
 
 @media (max-width: 480px) {
   .ui-brand { left: 16px; top: 16px; }
-  #counter { left: 16px; }
   .ui-cta { right: 16px; }
   #contact-panel { right: 12px; left: 12px; width: auto; }
 }

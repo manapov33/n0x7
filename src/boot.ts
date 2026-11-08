@@ -1,4 +1,6 @@
 import { site } from './content/site.ts';
+import { buildScenes } from './film/scenes.ts';
+import { computeFilm, totalScreens, type FilmState } from './film/timeline.ts';
 import { attachLamp, createUi } from './ui/ui.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from './util/timeout.ts';
 
@@ -31,106 +33,87 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   }
   root.dataset.mode = 'book';
 
+  const spreadCount = site.spreads.length;
+  const scenes = buildScenes(site.spreads.filter((s) => s.kind === 'work').length);
+  const screens = totalScreens(scenes);
+
   const canvas = document.createElement('canvas');
   canvas.id = 'scene';
   canvas.setAttribute('role', 'img');
-  const label = (spread: number) => canvas.setAttribute('aria-label', site.spreads[spread]?.alt ?? site.name);
-  label(0);
+  const label = (state: FilmState) => {
+    const spread = state.work ? state.work.index + 1 : state.spread;
+    canvas.setAttribute('aria-label', site.spreads[spread]?.alt ?? site.name);
+  };
   const loading = document.createElement('div');
   loading.id = 'loading';
   loading.innerHTML = '<span class="loading-logo">N0X7</span><span class="loading-bar"></span>';
-  document.body.append(canvas, loading);
+  const spacer = document.createElement('div');
+  spacer.id = 'film-spacer';
+  document.body.append(canvas, loading, spacer);
   const ui = createUi(document.body, site);
 
-  let app: { dispose(): void } | undefined;
-  let detachControls: (() => void) | undefined;
+  let app: { applyFilm(state: FilmState): void; dispose(): void } | undefined;
   let detachLamp: (() => void) | undefined;
   let failed = false;
+
+  // Прогресс = scrollY / (высота спейсера − высота окна).
+  const spacerHeight = () => screens * window.innerHeight;
+  const maxScroll = () => Math.max(1, spacerHeight() - window.innerHeight);
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  spacer.style.height = `${spacerHeight()}px`;
+  let progress = clamp01(window.scrollY / maxScroll());
+  const apply = () => {
+    const state = computeFilm(progress, {
+      scenes,
+      spreadCount,
+      aspect: Math.max(1, window.innerWidth) / Math.max(1, window.innerHeight),
+    });
+    root.dataset.scene = state.scene;
+    label(state);
+    app?.applyFilm(state);
+  };
+  const onScroll = () => {
+    progress = clamp01(window.scrollY / maxScroll());
+    apply();
+  };
+  // При изменении размера держим прогресс, а не пиксели прокрутки.
+  const onResize = () => {
+    spacer.style.height = `${spacerHeight()}px`;
+    window.scrollTo(0, progress * maxScroll());
+    apply();
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+  apply();
+
   const fail = () => {
     if (failed) return;
     failed = true;
     root.removeAttribute('data-mode');
-    detachControls?.();
+    root.removeAttribute('data-scene');
+    window.removeEventListener('scroll', onScroll);
+    window.removeEventListener('resize', onResize);
+    window.removeEventListener('orientationchange', onResize);
     detachLamp?.();
     app?.dispose();
     ui.destroy();
     canvas.remove();
     loading.remove();
+    spacer.remove();
   };
 
   try {
-    const { createApp, PAGE_W } = await load(import('./scene/scene.ts'), 'scene');
+    const { createApp } = await load(import('./scene/scene.ts'), 'scene');
     if (failed) return;
-    const { cameraFor, createPhoneCommands, createPhoneNavigator, isPhone, phoneDragWidthPx } = await load(
-      import('./controls/phone.ts'),
-      'phone',
-    );
-    if (failed) return;
-    let syncCamera = () => {};
-    const created = createApp(canvas, fail, {
-      onSpread: (spread) => {
-        label(spread);
-        ui.update();
-        syncCamera();
-      },
-    });
+    const created = createApp(canvas, fail);
     app = created;
     if (failed) {
       created.dispose();
       return;
     }
-    ui.setModel(created.model);
     detachLamp = attachLamp(window, (nx, ny) => created.setLamp(nx, ny), matchMedia('(hover: hover)').matches);
-    const { attachControls } = await load(import('./controls/controls.ts'), 'controls');
-    if (failed) return;
-
-    const model = created.model;
-    const nav = createPhoneNavigator(model);
-    const phoneCommands = createPhoneCommands(model, nav);
-    syncCamera = () => {
-      const c = cameraFor(window.innerWidth, model.spread, nav.focus(), PAGE_W);
-      created.setCameraTarget(c.x, c.target);
-    };
-    syncCamera();
-    window.addEventListener('resize', syncCamera);
-    window.addEventListener('orientationchange', syncCamera);
-    const after =
-      <A extends unknown[]>(f: (...a: A) => void) =>
-      (...a: A) => {
-        f(...a);
-        syncCamera();
-      };
-    // На десктопе команды идут прямо в модель, на телефоне — через постраничный навигатор.
-    const pick = () => (isPhone(window.innerWidth) ? phoneCommands : model);
-    const detachCamera = () => {
-      window.removeEventListener('resize', syncCamera);
-      window.removeEventListener('orientationchange', syncCamera);
-    };
-    const detachInput = attachControls(
-      canvas,
-      {
-        next: after(() => pick().next()),
-        prev: after(() => pick().prev()),
-        // Закрытая обложка стоит по центру: левая её половина тоже открывает журнал.
-        tap: after((side: 'left' | 'right') => {
-          if (ui.dismissOutside()) return; // тап мимо открытой панели только закрывает её
-          if (model.spread === 0 || side === 'right') pick().next();
-          else pick().prev();
-        }),
-        beginDrag: (d) => {
-          const ok = pick().beginDrag(d);
-          syncCamera();
-          return ok;
-        },
-        moveDrag: (f) => pick().moveDrag(f),
-        endDrag: after((v: number) => pick().endDrag(v)),
-      },
-      { spreadWidthPx: () => phoneDragWidthPx(window.innerWidth, created.spreadWidthPx(), canvas.clientWidth) },
-    );
-    detachControls = () => {
-      detachInput();
-      detachCamera();
-    };
+    apply();
     await created.ready;
     if (!failed) loading.remove();
   } catch {
