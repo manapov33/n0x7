@@ -198,8 +198,8 @@ export function createScreen(o: {
         return;
       }
       const e = entry(work.index, video);
+      // Загрузку начинает только preload() (решает boot): пролёт мимо работы при прыжке ничего не качает.
       e.seq.focus(frameIndex(work.frame, e.urls.length));
-      e.seq.preload();
       if (current?.work !== work.index) {
         shownUrl = wantedUrl = undefined; // другая работа: старый кадр не показываем
         lastIndex = -1;
