@@ -85,6 +85,7 @@ export function createOverlay(root: HTMLElement, site: Site): Overlay {
         el.style.opacity = String(v);
         el.style.transform = `translate3d(0, ${((1 - v) * RISE).toFixed(1)}px, 0)`;
         el.style.visibility = shown ? '' : 'hidden'; // у видимой наследуется от контейнера
+        el.style.willChange = shown ? 'opacity, transform' : ''; // слой держим только у видимой
         el.inert = !shown;
         if (shown) el.removeAttribute('aria-hidden');
         else el.setAttribute('aria-hidden', 'true');

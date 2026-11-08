@@ -50,3 +50,4 @@
 
 ## v2 задача 5 (ветка `feat/film`): надписи
 `src/film/overlay.ts` + `overlay.css` — HTML-надписи hero / work-k / services / contacts от `FilmState.overlay`; скрытые: `aria-hidden`, `inert`, `visibility:hidden`. Подпись у логотипа скрыта, пока виден герой (`html[data-hero]`). `ui.setCtaJump` — кнопка «Обсудить проект» в сцене контактов ведёт на `jumpTo(1)`. Тест `tests/e2e/overlay.spec.ts`. Скриншоты: `.superpowers/sdd/2026-11-05-n0x7-site/shots/film/`. Нестабильные до задачи: `idle.spec` («приход текстуры», «прокрутка перерисовывает»), `scroll.spec` клик по метке «Лилея»/«Контакты». Дальше: финальная проверка v2, настоящий телефон.
+Правило v2: развороты services и contacts — бессловесные декоративные страницы; текст живёт только в HTML-надписях (overlay).

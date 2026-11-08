@@ -25,8 +25,17 @@ html[data-mode='book'] #film-overlay {
   padding: 0 calc(var(--pad) + var(--rail)) 0 var(--pad);
   display: flex;
   flex-direction: column;
-  will-change: opacity, transform;
-  text-shadow: 0 1px 24px rgba(11, 10, 9, 0.55);
+  contain: paint;
+}
+
+/* Тень только у крупного текста поверх видео. */
+.ov-mark,
+.ov-lead,
+.ov-title,
+.ov-task,
+.ov-kicker,
+.ov-h {
+  text-shadow: 0 1px 12px rgba(11, 10, 9, 0.5);
 }
 
 .ov > * {
@@ -137,7 +146,7 @@ html[data-mode='book'] #film-overlay {
 /* ---------- Услуги ---------- */
 .ov-services {
   justify-content: center;
-  background: linear-gradient(to right, rgba(11, 10, 9, 0.9), rgba(11, 10, 9, 0.78) 45%, rgba(11, 10, 9, 0) 78%);
+  background: linear-gradient(to right, rgba(11, 10, 9, 0.93), rgba(11, 10, 9, 0.88) 62%, rgba(11, 10, 9, 0) 90%);
 }
 
 .ov-h {
@@ -180,7 +189,7 @@ html[data-mode='book'] #film-overlay {
 .ov-contacts {
   justify-content: flex-end;
   padding-bottom: clamp(96px, 14vh, 140px);
-  background: linear-gradient(to top, rgba(11, 10, 9, 0.85), rgba(11, 10, 9, 0.5) 40%, rgba(11, 10, 9, 0) 62%);
+  background: linear-gradient(to top, rgba(11, 10, 9, 0.92), rgba(11, 10, 9, 0.85) 38%, rgba(11, 10, 9, 0) 72%);
 }
 
 .ov-contacts .ov-h {
@@ -294,6 +303,10 @@ html[data-hero='1'] .ui-tagline {
   }
   .ov-contacts {
     padding-bottom: 96px;
+    background: linear-gradient(to top, rgba(11, 10, 9, 0.94), rgba(11, 10, 9, 0.9) 48%, rgba(11, 10, 9, 0) 82%);
+  }
+  .ov-services {
+    background: linear-gradient(to bottom, rgba(11, 10, 9, 0) 12%, rgba(11, 10, 9, 0.9) 36%, rgba(11, 10, 9, 0.9) 78%, rgba(11, 10, 9, 0) 100%);
   }
   .ov-contacts .ov-h {
     font-size: 44px;
