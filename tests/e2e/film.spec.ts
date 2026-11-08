@@ -1,4 +1,7 @@
-import { expect, test, type Page } from '@playwright/test';
+import { chromium, expect, test, type Page } from '@playwright/test';
+import { buildScenes } from '../../src/film/scenes.ts';
+import { totalScreens } from '../../src/film/timeline.ts';
+import { site } from '../../src/content/site.ts';
 
 // Прокрутка до доли прогресса фильма; ждём два кадра, чтобы сцена применилась.
 async function scrollToProgress(page: Page, p: number) {
@@ -33,7 +36,7 @@ test('высота спейсера равна числу экранов фил�
     ih: innerHeight,
     fixed: getComputedStyle(document.getElementById('scene')!).position,
   }));
-  expect(r.h / r.ih).toBeCloseTo(10.4, 1);
+  expect(r.h / r.ih).toBeCloseTo(totalScreens(buildScenes(site.spreads.filter((x) => x.kind === 'work').length)), 1);
   expect(r.fixed).toBe('fixed');
 });
 
@@ -91,4 +94,66 @@ test('перерисовка идёт при смене прогресса, в �
   expect(await draws()).toBe(0);
   await scrollToProgress(page, 0.1);
   await expect.poll(draws).toBeGreaterThan(0);
+});
+
+test('перезагрузка посередине: экран загрузки ждёт текстуры соседних разворотов', async ({ page }) => {
+  await scrollToProgress(page, 0.5);
+  let finished = 0;
+  page.on('requestfinished', (r) => {
+    if (/\/pages\/.*\.webp/.test(r.url())) finished++;
+  });
+  // Обложка и разворот 1 приходят сразу, остальные с задержкой: загрузка не должна кончиться раньше них.
+  const fast = new Set([0, 1].flatMap((i) => [site.spreads[i]!.left, site.spreads[i]!.right]).filter(Boolean));
+  await page.route('**/pages/*.webp', async (r) => {
+    const name = new URL(r.request().url()).pathname;
+    if (![...fast].some((u) => name.endsWith(u!.replace(/^.*\//, '')))) await new Promise((res) => setTimeout(res, 1500));
+    await r.continue();
+  });
+  await page.reload();
+  await expect(page.locator('#loading')).toHaveCount(1);
+  await page.waitForTimeout(800);
+  await expect(page.locator('#loading')).toHaveCount(1); // текстуры ещё не пришли
+  await expect(page.locator('#loading')).toHaveCount(0, { timeout: 15000 });
+  await page.waitForTimeout(100);
+  // сцена play второй работы: разворот 2 и соседние 1..3 = 6 страниц
+  expect(finished).toBeGreaterThanOrEqual(6);
+});
+
+test('canvas совпадает с областью без полосы прокрутки', async () => {
+  test.skip(test.info().project.name !== 'desktop', 'свой браузер и размер окна');
+  // Headless по умолчанию прячет полосы: включаем настоящие.
+  const browser = await chromium.launch({
+    ignoreDefaultArgs: ['--hide-scrollbars'],
+    args: ['--enable-unsafe-swiftshader'],
+  });
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  // Своя полоса через ::-webkit-scrollbar всегда классическая (занимает место).
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const st = document.createElement('style');
+      st.textContent = 'html::-webkit-scrollbar{width:16px}html::-webkit-scrollbar-thumb{background:#999}html::-webkit-scrollbar-track{background:#333}';
+      document.head.append(st);
+    });
+  });
+  await page.goto('http://localhost:4173/');
+  await expect(page.locator('#loading')).toHaveCount(0);
+  const m = await page.evaluate(() => {
+    const c = document.querySelector('canvas')!;
+    const r = c.getBoundingClientRect();
+    return {
+      gap: innerWidth - document.documentElement.clientWidth,
+      cw: document.documentElement.clientWidth,
+      ch: document.documentElement.clientHeight,
+      bw: c.width,
+      bh: c.height,
+      rw: r.width,
+      dpr: devicePixelRatio,
+    };
+  });
+  expect(m.gap).toBeGreaterThanOrEqual(10); // предусловие: полоса настоящая
+  expect(m.rw).toBe(m.cw);
+  expect(m.bw / m.bh).toBeCloseTo(m.cw / m.ch, 2);
+  await ctx.close();
+  await browser.close();
 });

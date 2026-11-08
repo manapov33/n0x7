@@ -37,6 +37,22 @@ test('Escape и кнопка закрытия закрывают панель, �
   await expect(button(page)).toBeFocused();
 });
 
+test('кнопка работает, пока чанк сцены ещё грузится', async ({ page }) => {
+  // Чанк сцены (three.js) приходит позже главного.
+  await page.route('**/assets/*.js', async (r) => {
+    if (!/\/index-[^/]*\.js/.test(r.request().url())) await new Promise((res) => setTimeout(res, 1500));
+    await r.continue();
+  });
+  await page.goto('/');
+  await expect(page.locator('#loading')).toHaveCount(1);
+  await expect(button(page)).toBeVisible();
+  await button(page).click();
+  await expect(page.locator('#contact-panel a[href^="tel:"]')).toBeVisible();
+  await expect(page.locator('#loading')).toHaveCount(0, { timeout: 15000 });
+  await button(page).click(); // панель уже открыта: нажатие закрывает её
+  await expect(page.locator('#contact-panel')).toBeHidden();
+});
+
 test('размеры: цели касания не меньше 44 px, нет горизонтального переполнения', async ({ page }) => {
   await page.goto('/');
   await button(page).click();

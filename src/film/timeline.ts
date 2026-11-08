@@ -16,6 +16,8 @@ export type FilmState = {
 export type FilmInput = { scenes: SceneSpec[]; spreadCount: number; aspect: number };
 
 const TABLE_FACTOR = 2.2;
+// В портрете (телефон) стол снимается от закрытого журнала: он занимает около половины ширины экрана.
+const TABLE_FACTOR_PORTRAIT = 1.75;
 const EPS = 1e-9;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -56,10 +58,12 @@ export function computeFilm(progress: number, input: FilmInput): FilmState {
   const s = smooth(t);
 
   const hSpread = fitCamera(aspect, 'spread', PAGE_W, PAGE_H, FOV);
-  const hTable = TABLE_FACTOR * hSpread;
+  const hPage = fitCamera(aspect, 'page', PAGE_W, PAGE_H, FOV);
+  const hTable = aspect < 1 ? TABLE_FACTOR_PORTRAIT * hPage : TABLE_FACTOR * hSpread;
   const hMid = (hTable + hSpread) / 2;
   const tan = Math.tan((FOV * Math.PI) / 360);
-  const hCover = Math.max(PAGE_H / 2 / tan, (2 * PAGE_W) / 2 / (tan * aspect));
+  // cover: разворот 2·PAGE_W × PAGE_H закрывает весь экран при любом соотношении сторон
+  const hCover = Math.min(PAGE_H / 2 / tan, PAGE_W / (tan * aspect));
 
   let h: number;
   switch (cur.id) {

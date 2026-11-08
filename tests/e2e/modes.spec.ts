@@ -53,7 +53,7 @@ test('изменение размера окна меняет буфер canvas 
   const size = () =>
     canvas.evaluate((c: HTMLCanvasElement) => ({ w: c.width, h: c.height, dpr: devicePixelRatio }));
   const before = await size();
-  expect(before.w).toBe(Math.round(1440 * Math.min(before.dpr, 2)));
+  expect(before.w).toBe(Math.round(await page.evaluate(() => document.documentElement.clientWidth) * Math.min(before.dpr, 2)));
   expect(before.h).toBe(Math.round(900 * Math.min(before.dpr, 2)));
 
   await page.setViewportSize({ width: 800, height: 1000 });

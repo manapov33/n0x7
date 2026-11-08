@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScenes, SCREENS } from '../../src/film/scenes.ts';
+import { fitCamera } from '../../src/scene/camera.ts';
+import { FOV, PAGE_H, PAGE_W } from '../../src/scene/dims.ts';
 import { computeFilm, sceneStart, totalScreens } from '../../src/film/timeline.ts';
 
 const scenes = buildScenes(3);
@@ -52,14 +54,29 @@ describe('film timeline', () => {
       }
     }
   });
-  it('spread covers the viewport during play', () => {
-    const tan = Math.tan((17.5 * Math.PI) / 180);
+  it('spread covers the viewport during play (cover, not contain)', () => {
+    const tan = Math.tan((FOV * Math.PI) / 360);
     const p = (sceneStart(scenes, 3) + sceneStart(scenes, 4)) / 2;
-    for (const aspect of [0.46, 1, 2.2]) {
+    for (const aspect of [0.46, 1, 1.6, 2.2]) {
       const h = computeFilm(p, { ...input, aspect }).camera.h;
-      expect(h * tan).toBeGreaterThanOrEqual(2 - 1e-6);
-      expect(h * tan * aspect).toBeGreaterThanOrEqual(3 - 1e-6);
+      const halfH = h * tan;
+      const halfW = h * tan * aspect;
+      expect(halfH).toBeLessThanOrEqual(PAGE_H / 2 + 1e-6);
+      expect(halfW).toBeLessThanOrEqual(PAGE_W + 1e-6);
+      expect(Math.min(PAGE_H / 2 - halfH, PAGE_W - halfW)).toBeLessThan(1e-6);
     }
+  });
+  it('closed magazine is about half the viewport width on a phone at table', () => {
+    const tan = Math.tan((FOV * Math.PI) / 360);
+    const aspect = 390 / 844;
+    const h = computeFilm(0, { ...input, aspect }).camera.h;
+    const frac = PAGE_W / (2 * h * tan * aspect);
+    expect(frac).toBeGreaterThan(0.45);
+    expect(frac).toBeLessThan(0.55);
+  });
+  it('desktop table framing unchanged', () => {
+    const hSpread = fitCamera(1.6, 'spread', PAGE_W, PAGE_H, FOV);
+    expect(computeFilm(0, input).camera.h).toBeCloseTo(2.2 * hSpread, 9);
   });
   it('pages turn', () => {
     const s = computeFilm(sceneStart(scenes, 6), input);

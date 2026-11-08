@@ -149,8 +149,9 @@ export function createApp(
   scene.add(lamp, lamp.target);
 
   function resize() {
-    const w = Math.max(1, window.innerWidth);
-    const h = Math.max(1, window.innerHeight);
+    // Размер canvas в CSS — это clientWidth/clientHeight: innerWidth включает классическую полосу прокрутки.
+    const w = Math.max(1, document.documentElement.clientWidth);
+    const h = Math.max(1, document.documentElement.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -167,6 +168,18 @@ export function createApp(
   canvas.addEventListener('webglcontextlost', onLost);
 
   let lastSpread = -1;
+  // Экран загрузки ждёт текстуры начального разворота и соседних (перезагрузка посреди фильма).
+  let resolveReady: () => void = () => {};
+  const ready = new Promise<void>((r) => (resolveReady = r));
+  let readyStarted = false;
+  const needed = (s: number) => [Math.max(0, s - 1), s].map((n) => store.ensure(Math.min(n, spreads.length - 1)));
+  async function settleReady() {
+    for (let s = lastSpread; ; s = lastSpread) {
+      await Promise.all(needed(s)).catch(() => {});
+      if (s === lastSpread || disposed) break; // позиция могла уехать, пока грузилось
+    }
+    resolveReady();
+  }
   function frame() {
     if (disposed) return;
     raf = requestAnimationFrame(frame);
@@ -181,6 +194,7 @@ export function createApp(
   function dispose() {
     if (disposed) return;
     disposed = true;
+    resolveReady();
     cancelAnimationFrame(raf);
     window.removeEventListener('resize', resize);
     canvas.removeEventListener('webglcontextlost', onLost);
@@ -195,7 +209,7 @@ export function createApp(
   }
 
   return {
-    ready: store.ensure(0),
+    ready,
     applyFilm(state) {
       if (disposed) return;
       const prev = film;
@@ -211,7 +225,11 @@ export function createApp(
       if (state.spread !== lastSpread) {
         lastSpread = state.spread;
         // Лист переворачивается ещё на предыдущем развороте: оборот нужен заранее.
-        for (const n of [lastSpread - 1, lastSpread, lastSpread + 1]) if (n >= 0 && n < spreads.length) void store.ensure(n);
+        for (const p of needed(lastSpread)) void p;
+        if (!readyStarted) {
+          readyStarted = true;
+          void settleReady();
+        }
       }
     },
     setLamp(nx, ny) {

@@ -66,7 +66,7 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
     const state = computeFilm(progress, {
       scenes,
       spreadCount,
-      aspect: Math.max(1, window.innerWidth) / Math.max(1, window.innerHeight),
+      aspect: Math.max(1, root.clientWidth) / Math.max(1, root.clientHeight),
     });
     root.dataset.scene = state.scene;
     label(state);
