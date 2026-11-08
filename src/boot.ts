@@ -4,7 +4,7 @@ import { shouldPreload } from './film/frames.ts';
 import { createOverlay } from './film/overlay.ts';
 import { createRail } from './film/rail.ts';
 import { attachKeys, createScroll } from './film/scroll.ts';
-import { computeFilm, sceneStart, totalScreens, type FilmState } from './film/timeline.ts';
+import { computeFilm, sceneProgress, sceneStart, totalScreens, WORK_LANDING_T, type FilmState } from './film/timeline.ts';
 import { attachLamp, createUi } from './ui/ui.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from './util/timeout.ts';
 
@@ -89,7 +89,12 @@ export async function boot(o: { importTimeoutMs?: number } = {}): Promise<void> 
   const works = site.spreads.filter((s) => s.kind === 'work');
   const marks = works.map((w, k) => ({
     label: w.title,
-    progress: sceneStart(scenes, scenes.findIndex((s) => s.id === 'play' && s.work === k)),
+    // Метка приводит чуть внутрь play: на самом его начале надпись работы ещё не проявлена.
+    progress: sceneProgress(
+      scenes,
+      scenes.findIndex((s) => s.id === 'play' && s.work === k),
+      WORK_LANDING_T,
+    ),
   }));
   // Метка «Контакты» ведёт в самый конец: там полностью готовая сцена (в начале contacts ещё видны услуги).
   marks.push({ label: 'Контакты', progress: 1 });

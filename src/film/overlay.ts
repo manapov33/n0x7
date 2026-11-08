@@ -11,6 +11,14 @@ export type Overlay = {
 const SHOWN = 0.05;
 /** Подъём надписи при появлении, px. */
 const RISE = 28;
+const RISE_PART = 14;
+/** Части надписи работы проявляются по очереди: каждая занимает 0.4 общей шкалы, со сдвигом 0.3. */
+const STAGGER = 0.3;
+const STAGGER_SPAN = 0.4;
+const smooth = (t: number) => {
+  const c = Math.min(1, Math.max(0, t));
+  return c * c * (3 - 2 * c);
+};
 
 export function createOverlay(root: HTMLElement, site: Site): Overlay {
   const phoneHref = 'tel:' + site.phone.replace(/[^\d+]/g, '');
@@ -72,6 +80,9 @@ export function createOverlay(root: HTMLElement, site: Site): Overlay {
 
   const els = new Map<string, HTMLElement>();
   layer.querySelectorAll<HTMLElement>('[data-ov]').forEach((e) => els.set(e.dataset.ov!, e));
+  const parts = new Map<string, HTMLElement[]>();
+  for (const [id, el] of els)
+    if (id.startsWith('work-')) parts.set(id, [...el.querySelectorAll<HTMLElement>('.ov-kicker, .ov-title, .ov-task')]);
   const last = new Map<string, number>();
   const doc = root.ownerDocument.documentElement;
 
@@ -89,6 +100,11 @@ export function createOverlay(root: HTMLElement, site: Site): Overlay {
         el.inert = !shown;
         if (shown) el.removeAttribute('aria-hidden');
         else el.setAttribute('aria-hidden', 'true');
+        parts.get(id)?.forEach((p, i) => {
+          const c = smooth((v - i * STAGGER) / STAGGER_SPAN);
+          p.style.opacity = String(c);
+          p.style.transform = `translate3d(0, ${((1 - c) * RISE_PART).toFixed(1)}px, 0)`;
+        });
         if (id === 'hero') doc.dataset.hero = shown ? '1' : '0';
       }
     },

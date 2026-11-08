@@ -24,6 +24,13 @@ test('клик по метке «Лилея» ведёт к сцене play', as
   await page.getByRole('button', { name: 'Лилея' }).click();
   await expect(html(page)).toHaveAttribute('data-scene', 'play', { timeout: 3000 });
   await expect(page.getByRole('button', { name: 'Лилея' })).toHaveAttribute('aria-current', 'true');
+  // метка приводит туда, где название, «концепт» и задача уже на экране
+  await settled(page);
+  const ov = page.locator('[data-ov="work-0"]');
+  await expect(ov.getByRole('heading', { name: 'Лилея' })).toBeVisible();
+  await expect(ov.getByText('концепт')).toBeVisible();
+  const opacities = await ov.locator('.ov-kicker, .ov-title, .ov-task').evaluateAll((els) => els.map((e) => getComputedStyle(e).opacity));
+  expect(opacities).toEqual(['1', '1', '1']);
 });
 
 test('метка «Контакты» ведёт к сцене contacts', async ({ page }) => {
