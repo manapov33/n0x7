@@ -24,7 +24,7 @@ test('клик по метке «Лилея» ведёт к сцене play', as
   await page.getByRole('button', { name: 'Лилея' }).click();
   await settled(page);
   await expect(html(page)).toHaveAttribute('data-scene', 'play');
-  await expect(page.getByRole('button', { name: 'Лилея' })).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('button', { name: 'Лилея' })).toHaveAttribute('aria-current', 'location');
   // метка приводит туда, где название, «концепт» и задача уже на экране
   await settled(page);
   const ov = page.locator('[data-ov="work-0"]');

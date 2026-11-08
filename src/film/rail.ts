@@ -42,7 +42,7 @@ export function createRail(
         if (m.progress <= p + 1e-6) active = i;
       });
       buttons.forEach((b, i) => {
-        if (i === active) b.setAttribute('aria-current', 'true');
+        if (i === active) b.setAttribute('aria-current', 'location');
         else b.removeAttribute('aria-current');
         b.classList.toggle('passed', i <= active);
       });

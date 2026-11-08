@@ -291,10 +291,10 @@ describe('createRail', () => {
     buttons[0]!.click();
     expect(onJump).toHaveBeenCalledWith(0.3);
     rail.update(0.5);
-    expect(buttons[0]!.getAttribute('aria-current')).toBe('true');
+    expect(buttons[0]!.getAttribute('aria-current')).toBe('location');
     expect(buttons[1]!.hasAttribute('aria-current')).toBe(false);
     rail.update(0.95);
-    expect(buttons[1]!.getAttribute('aria-current')).toBe('true');
+    expect(buttons[1]!.getAttribute('aria-current')).toBe('location');
     rail.destroy();
     expect(root.children.length).toBe(0);
   });
