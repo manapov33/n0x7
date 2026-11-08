@@ -1,4 +1,4 @@
-import { Mesh, MeshStandardMaterial, PlaneGeometry, SRGBColorSpace, Texture, type Scene } from 'three';
+import { Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, Texture, type Scene } from 'three';
 import type { Spread } from '../content/types.ts';
 import { createFrameSequence, frameIndex } from '../film/frames.ts';
 import { withTimeout } from '../util/timeout.ts';
@@ -33,8 +33,9 @@ export function createScreen(o: {
   requestRender(): void;
 }): Screen {
   const geometry = new PlaneGeometry(o.width, o.height);
-  // Тот же материал, что у страниц: освещение одинаково, поэтому первый кадр не отличается от страниц.
-  const material = new MeshStandardMaterial({ color: 0xffffff, roughness: 0.92, metalness: 0, transparent: true, opacity: 0 });
+  // Без освещения и тон-маппинга: цвета ролика как в исходнике (лампа стола не красит кадр в янтарь).
+  // Страницы остаются освещёнными; непрозрачность экрана растёт по dive, и цвет переходит плавно.
+  const material = new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, toneMapped: false });
   const mesh = new Mesh(geometry, material);
   mesh.position.z = SCREEN_Z;
   mesh.renderOrder = 2;
@@ -49,6 +50,20 @@ export function createScreen(o: {
   let wantedUrl: string | undefined;
   let disposed = false;
   let lastIndex = 0;
+
+  // Кадры в последовательности только догружаются в кэш браузера (без декодирования):
+  // декодируем один раз, когда кадр попадает в окно показа.
+  const fetchOnly = (url: string) =>
+    withTimeout(
+      new Promise<void>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error(`frame:${url}`));
+        img.src = url;
+      }),
+      o.loadTimeoutMs,
+      `frame:${url}`,
+    );
 
   const decode = (url: string) =>
     withTimeout(
@@ -73,7 +88,7 @@ export function createScreen(o: {
       const seq = createFrameSequence<string>({
         urls,
         load: async (url) => {
-          await decode(url);
+          await fetchOnly(url);
           return url;
         },
         onReady: () => refresh(),
@@ -182,6 +197,7 @@ export function createScreen(o: {
         return;
       }
       const e = entry(work.index, video);
+      e.seq.focus(frameIndex(work.frame, e.urls.length));
       e.seq.preload();
       if (current?.work !== work.index) {
         shownUrl = wantedUrl = undefined; // другая работа: старый кадр не показываем

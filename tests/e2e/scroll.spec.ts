@@ -33,7 +33,7 @@ test('метка «Контакты» ведёт к сцене contacts', async 
 
 test('метки: три работы и контакты, в порядке фильма', async ({ page }) => {
   const names = await page.locator('.film-rail button').allTextContents();
-  expect(names).toEqual(['Зерно и Дым', 'Лилея', 'Резиденция Север', 'Контакты']);
+  expect(names).toEqual(['Лилея', 'Зерно и Дым', 'Резиденция Север', 'Контакты']);
 });
 
 test('метки доступны с клавиатуры', async ({ page }) => {

@@ -63,6 +63,23 @@ describe('createFrameSequence', () => {
     expect(seq.readyCount()).toBe(12);
   });
 
+  it('focus: сначала кадры около фокуса, потом наружу', async () => {
+    const order: number[] = [];
+    const seq = createFrameSequence({
+      urls,
+      load: async (url) => {
+        order.push(Number(/(\d+)\.webp/.exec(url)![1]));
+        return url;
+      },
+      concurrency: 1,
+    });
+    seq.focus(8);
+    seq.preload();
+    await settle();
+    expect(order.slice(0, 5)).toEqual([8, 7, 9, 6, 10]);
+    expect(order.length).toBe(12);
+  });
+
   it('onReady сообщает индекс готового кадра', async () => {
     const got: number[] = [];
     const seq = createFrameSequence({ urls: urls.slice(0, 3), load: async (u) => u, onReady: (i) => got.push(i) });

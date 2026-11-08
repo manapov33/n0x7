@@ -19,17 +19,34 @@ export function createFrameSequence<T>(o: {
   onReady?: (index: number) => void;
 }): {
   preload(): void;
+  /** Грузить в первую очередь кадры около i (от них наружу). */
+  focus(i: number): void;
   nearestReady(i: number): T | undefined;
   readyCount(): number;
 } {
   const ready = new Map<number, T>();
   const limit = o.concurrency ?? DEFAULT_CONCURRENCY;
   let started = false;
-  let next = 0;
+  let focusAt = 0;
+  const queue = new Set<number>(o.urls.map((_, i) => i));
+
+  // Следующим берём не принятый в работу кадр, ближайший к фокусу (при равенстве более ранний).
+  function take(): number | undefined {
+    let best: number | undefined;
+    for (const i of queue) {
+      if (best === undefined) best = i;
+      else {
+        const d = Math.abs(i - focusAt);
+        const db = Math.abs(best - focusAt);
+        if (d < db || (d === db && i < best)) best = i;
+      }
+    }
+    if (best !== undefined) queue.delete(best);
+    return best;
+  }
 
   async function worker(): Promise<void> {
-    while (next < o.urls.length) {
-      const i = next++;
+    for (let i = take(); i !== undefined; i = take()) {
       try {
         ready.set(i, await o.load(o.urls[i]!));
       } catch {
@@ -44,6 +61,9 @@ export function createFrameSequence<T>(o: {
   }
 
   return {
+    focus(i) {
+      focusAt = i;
+    },
     preload() {
       if (started) return;
       started = true;

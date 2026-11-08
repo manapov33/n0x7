@@ -34,7 +34,7 @@ describe('renderFallback', () => {
 
 describe('site', () => {
   it('имеет пять разворотов в нужном порядке', () => {
-    expect(site.spreads.map((s) => s.id)).toEqual(['cover', 'coffee', 'beauty', 'residence', 'services']);
+    expect(site.spreads.map((s) => s.id)).toEqual(['cover', 'beauty', 'coffee', 'residence', 'services']);
   });
 
   it('у обложки только правая сторона, у остальных обе', () => {

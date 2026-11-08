@@ -19,16 +19,6 @@ export const site: Site = {
       alt: 'Обложка журнала студии N0X7',
     },
     {
-      id: 'coffee',
-      kind: 'work',
-      title: 'Зерно и Дым',
-      task: 'Сайт кофейни с меню и онлайн-заказом навынос',
-      isConcept: true,
-      left: '/pages/coffee-left.webp',
-      right: '/pages/coffee-right.webp',
-      alt: 'Концепт сайта кофейни «Зерно и Дым»',
-    },
-    {
       id: 'beauty',
       kind: 'work',
       title: 'Лилея',
@@ -38,6 +28,16 @@ export const site: Site = {
       right: '/pages/beauty-right.webp',
       alt: 'Концепт интернет-магазина косметики «Лилея»',
       video: { dir: '/frames/beauty', count: 90, phoneCount: 60 },
+    },
+    {
+      id: 'coffee',
+      kind: 'work',
+      title: 'Зерно и Дым',
+      task: 'Сайт кофейни с меню и онлайн-заказом навынос',
+      isConcept: true,
+      left: '/pages/coffee-left.webp',
+      right: '/pages/coffee-right.webp',
+      alt: 'Концепт сайта кофейни «Зерно и Дым»',
     },
     {
       id: 'residence',
