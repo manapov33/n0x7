@@ -19,6 +19,7 @@ import { site } from '../content/site.ts';
 import { createScreen } from './screen.ts';
 import { createTextureStore } from '../textures/store.ts';
 import { LOAD_TIMEOUT_MS, withTimeout } from '../util/timeout.ts';
+import { assetUrl } from '../util/asset.ts';
 import { isPhone } from '../controls/viewport.ts';
 import type { FilmState } from '../film/timeline.ts';
 import { FOV, PAGE_H, PAGE_W, phoneCropWidth } from './dims.ts';
@@ -70,7 +71,7 @@ export function createApp(
     withTimeout(
       new Promise<Texture>((resolve, reject) => {
         loader.load(
-          url,
+          assetUrl(url),
           (t) => {
             if (disposed) return t.dispose();
             t.colorSpace = SRGBColorSpace;

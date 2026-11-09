@@ -2,6 +2,7 @@ import { Mesh, MeshBasicMaterial, PlaneGeometry, SRGBColorSpace, Texture, type S
 import type { Spread } from '../content/types.ts';
 import { createFrameSequence, frameIndex } from '../film/frames.ts';
 import { withTimeout } from '../util/timeout.ts';
+import { assetUrl } from '../util/asset.ts';
 
 /** Сколько декодированных кадров держим у себя; остальными управляет браузер. */
 const WINDOW = 10;
@@ -82,7 +83,7 @@ export function createScreen(o: {
     if (!e) {
       const count = o.phone ? video.phoneCount : video.count;
       const prefix = o.phone ? 'p' : 'd';
-      const urls = Array.from({ length: count }, (_, i) => `${video.dir}/${prefix}-${pad(i)}.webp`);
+      const urls = Array.from({ length: count }, (_, i) => assetUrl(`${video.dir}/${prefix}-${pad(i)}.webp`));
       const index = new Map(urls.map((u, i) => [u, i]));
       // В последовательности остаётся только url: картинки не копим, браузер держит их сам.
       const seq = createFrameSequence<string>({
