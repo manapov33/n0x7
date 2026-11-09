@@ -14,6 +14,9 @@
 
 Решено: название N0X7; клиенты — малый бизнес, бренды, премиум; рынок Россия; без формы, контакты Telegram и телефон; ролики работ генерирует заказчик вручную в SYNTX (Seedance 2.0, режим Keyframes, первый кадр — фото работы), API SYNTX не используем.
 
+## Публикация (черновик)
+Публичный репозиторий https://github.com/manapov33/n0x7 (ветка по умолчанию `feat/film`). Превью на GitHub Pages: https://manapov33.github.io/n0x7/ — пересобирается при каждом push в `feat/film` (`.github/workflows/pages.yml`, сборка `vite build --base=/n0x7/`). Пути к файлам из public идут через `assetUrl()` (`src/util/asset.ts`). Стоит `noindex`. Локальный просмотр: `.claude/launch.json` (vite --host, порт 5173).
+
 ## Файлы
 - `docs/superpowers/specs/2026-11-06-n0x7-film-design.md` — спецификация v2 (действующая).
 - `docs/superpowers/plans/2026-11-08-n0x7-film.md` — план v2 (задачи 1–5 выполнены).
